@@ -1,4 +1,4 @@
 #!/bin/bash
 DIRNAME=`dirname $0`
 cd $DIRNAME/..
-java -cp target/fogbow-cli-0.0.1-SNAPSHOT.jar:target/lib/* main.java.org.fogbowcloud.cli.Main $@
+java -cp target/fogbow-cli-0.0.1-SNAPSHOT-jar-with-dependencies.jar main.java.org.fogbowcloud.cli.Main $@
