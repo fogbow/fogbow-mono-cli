@@ -1,4 +1,4 @@
-package org.fogbowcloud.cli;
+package main.java.org.fogbowcloud.cli;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import main.java.org.fogbowcloud.cli.util.Constants;
 
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -27,8 +29,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.fogbowcloud.cli.util.ConstantsManager;
-import org.fogbowcloud.cli.util.ConstantsManager.TokenConstants;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -39,8 +39,8 @@ public class Main {
 
 	public static final String DEFAULT_URL = "http://localhost:8182";
 	public static final int DEFAULT_INTANCE_COUNT = 1;
-	public static final String DEFAULT_TYPE = ConstantsManager.DEFAULT_TYPE;
-	public static final String DEFAULT_FLAVOR = ConstantsManager.SMALL_TERM;
+	public static final String DEFAULT_TYPE = Constants.DEFAULT_TYPE;
+	public static final String DEFAULT_FLAVOR = Constants.SMALL_TERM;
 	public static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -83,17 +83,17 @@ public class Main {
 					return;
 				}
 				if (request.requestId != null) {
-					doRequest("get", url + "/" + ConstantsManager.TERM + "/" + request.requestId,
+					doRequest("get", url + "/" + Constants.TERM + "/" + request.requestId,
 							request.authToken);
 				} else {
-					doRequest("get", url + "/" + ConstantsManager.TERM, request.authToken);
+					doRequest("get", url + "/" + Constants.TERM, request.authToken);
 				}
 			} else if (request.delete) {
 				if (request.create || request.get || request.requestId == null) {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + ConstantsManager.TERM + "/" + request.requestId,
+				doRequest("delete", url + "/" + Constants.TERM + "/" + request.requestId,
 						request.authToken);
 			} else if (request.create) {
 				if (request.delete || request.get || request.requestId != null) {
@@ -107,20 +107,20 @@ public class Main {
 				}
 
 				Set<Header> headers = new HashSet<Header>();
-				headers.add(new BasicHeader("Category", ConstantsManager.TERM + "; scheme=\""
-						+ ConstantsManager.SCHEME + "\"; class=\"" + ConstantsManager.KIND_CLASS
+				headers.add(new BasicHeader("Category", Constants.TERM + "; scheme=\""
+						+ Constants.SCHEME + "\"; class=\"" + Constants.KIND_CLASS
 						+ "\""));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						"org.fogbowcloud.request.instance-count=" + request.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type="
 						+ request.type));
 				headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-						+ ConstantsManager.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-						+ ConstantsManager.MIXIN_CLASS + "\""));
+						+ Constants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+						+ Constants.MIXIN_CLASS + "\""));
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
-						+ ConstantsManager.TEMPLATE_OS_SCHEME + "\"; class=\""
-						+ ConstantsManager.MIXIN_CLASS + "\""));
-				doRequest("post", url + "/" + ConstantsManager.TERM, request.authToken, headers);
+						+ Constants.TEMPLATE_OS_SCHEME + "\"; class=\""
+						+ Constants.MIXIN_CLASS + "\""));
+				doRequest("post", url + "/" + Constants.TERM, request.authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
 			String url = instance.url;
@@ -146,7 +146,7 @@ public class Main {
 		} else if (parsedCommand.equals("token")) {
 			String url = token.url;
 
-			Set<Header> headers = getHeadersCredentials(token.credentials);
+			Set<Header> headers = getCredentialHeaders(token.credentials);
 
 			doRequest("get", url + "/token", null, headers);
 		} else if (parsedCommand.equals("resource")) {
@@ -159,29 +159,15 @@ public class Main {
 	private static String normalizeToken(String token) {
 		if (token == null) {
 			return null;
-		}
-		return token
-				.replace(ConstantsManager.BREAK_LINE_REPLACE,
-						ConstantsManager.SUBSTITUTE_BREAK_LINE_REPLACE).replace("\r", "")
-				.replace(ConstantsManager.SPACE_REPLACE, ConstantsManager.SUBSTITUTE_SPACE_REPLACE);
+		}		
+		return token.replace(Constants.BREAK_LINE_REPLACE, "");
 	}
 
-	private static Set<Header> getHeadersCredentials(Map<String, String> mapCredentials) {
+	private static Set<Header> getCredentialHeaders(Map<String, String> mapCredentials) {
 		Set<Header> headers = new HashSet<Header>();
-
-		TokenConstants[] tokenConstants = TokenConstants.values();
-		for (TokenConstants constant : tokenConstants) {
-			if (constant.getValue().equals(TokenConstants.USER_KEY.getValue())) {
-				if (mapCredentials.get(TokenConstants.PASSWORD_KEY.getValue()) == null) {
-					System.out.print("Password: ");
-					String password = new String(JCommander.getConsole().readPassword(false));
-					headers.add(new BasicHeader(TokenConstants.PASSWORD_KEY.getValue(), password));
-				}
-			}
-			String value = mapCredentials.get(constant.getValue());
-			if (value != null) {
-				headers.add(new BasicHeader(constant.getValue(), value));
-			}
+		
+		for (String keyMapCredentials : mapCredentials.keySet()) {
+			headers.add(new BasicHeader(keyMapCredentials, mapCredentials.get(keyMapCredentials)));
 		}
 
 		return headers;
@@ -209,9 +195,9 @@ public class Main {
 		} else if (method.equals("post")) {
 			request = new HttpPost(endpoint);
 		}
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 		if (authToken != null) {
-			request.addHeader(ConstantsManager.X_AUTH_TOKEN, authToken);
+			request.addHeader(Constants.X_AUTH_TOKEN, authToken);
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);

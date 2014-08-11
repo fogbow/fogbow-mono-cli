@@ -1,4 +1,7 @@
-package org.fogbowcloud.cli;
+package test.java.org.fogbowcloud.cli;
+
+import main.java.org.fogbowcloud.cli.Main;
+import main.java.org.fogbowcloud.cli.util.Constants;
 
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -12,8 +15,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.message.BasicStatusLine;
-import org.fogbowcloud.cli.util.ConstantsManager;
-import org.fogbowcloud.cli.util.ConstantsManager.TokenConstants;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
@@ -51,10 +52,10 @@ public class TestCli {
 		final String tenantName = "admin";
 
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/token");
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader(TokenConstants.USER_KEY.getValue(), user);
-		request.addHeader(TokenConstants.PASSWORD_KEY.getValue(), password);
-		request.addHeader(TokenConstants.TENANT_NAME_KEY.getValue(), tenantName);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader("username", user);
+		request.addHeader("password", password);
+		request.addHeader("tenantName", tenantName);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "token --get --url " + Main.DEFAULT_URL + " -Dusername=" + user
@@ -73,10 +74,10 @@ public class TestCli {
 		final String tenantName = "admin";
 
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/token");
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader(TokenConstants.USER_KEY.getValue(), user);
-		request.addHeader(TokenConstants.PASSWORD_KEY.getValue(), password);
-		request.addHeader(TokenConstants.TENANT_NAME_KEY.getValue(), tenantName);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader("username", user);
+		request.addHeader("password", password);
+		request.addHeader("tenantName", tenantName);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "token --get -Dusername=" + user + "  -DtenantName=" + tenantName
@@ -101,9 +102,9 @@ public class TestCli {
 		final String image = "image";
 		final String flavor = "flavor";
 
-		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + ConstantsManager.TERM);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", ConstantsManager.TERM
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + Constants.TERM);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", Constants.TERM
 				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ intanceCount);
@@ -112,7 +113,7 @@ public class TestCli {
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
@@ -126,20 +127,19 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostRequestDefaultValues() throws Exception {
-		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + ConstantsManager.TERM);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", ConstantsManager.TERM + "; scheme=\""
-				+ ConstantsManager.SCHEME + "\"; class=\"" + ConstantsManager.KIND_CLASS + "\"");
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + Constants.TERM);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", Constants.TERM + "; scheme=\"" + Constants.SCHEME
+				+ "\"; class=\"" + Constants.KIND_CLASS + "\"");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ Main.DEFAULT_INTANCE_COUNT);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
 		request.addHeader("Category", Main.DEFAULT_FLAVOR + "; scheme=\""
-				+ ConstantsManager.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-				+ ConstantsManager.MIXIN_CLASS + "\"");
+				+ Constants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\"" + Constants.MIXIN_CLASS
+				+ "\"");
 		request.addHeader("Category", Main.DEFAULT_IMAGE + "; scheme=\""
-				+ ConstantsManager.TEMPLATE_OS_SCHEME + "\"; class=\""
-				+ ConstantsManager.MIXIN_CLASS + "\"");
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+				+ Constants.TEMPLATE_OS_SCHEME + "\"; class=\"" + Constants.MIXIN_CLASS + "\"");
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --url " + Main.DEFAULT_URL + " --auth-token "
@@ -152,11 +152,11 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetSpecificRequest() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + ConstantsManager.TERM + "/"
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + Constants.TERM + "/"
 				+ REQUEST_ID);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --get --url " + Main.DEFAULT_URL + " --auth-token "
@@ -169,10 +169,10 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetRequest() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + ConstantsManager.TERM);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + Constants.TERM);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --get --url " + Main.DEFAULT_URL + " --auth-token "
@@ -185,11 +185,11 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandDeleteRequest() throws Exception {
-		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + ConstantsManager.TERM
-				+ "/" + REQUEST_ID);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + Constants.TERM + "/"
+				+ REQUEST_ID);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --delete --url " + Main.DEFAULT_URL + " --auth-token "
@@ -203,7 +203,7 @@ public class TestCli {
 	@Test
 	public void commandGetQuery() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/-/");
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "resource --get";
@@ -216,7 +216,7 @@ public class TestCli {
 	@Test
 	public void commandGetMember() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/members");
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "member --get";
@@ -229,8 +229,8 @@ public class TestCli {
 	@Test
 	public void commandGetInstance() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/compute/");
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --get --url " + Main.DEFAULT_URL + " " + " --auth-token "
@@ -244,8 +244,8 @@ public class TestCli {
 	@Test
 	public void commandGetSpecificInstance() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/compute/" + INSTANCE_ID);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --get --url " + Main.DEFAULT_URL + " " + "--id " + INSTANCE_ID
@@ -259,8 +259,8 @@ public class TestCli {
 	@Test
 	public void commandDeleteInstance() throws Exception {
 		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/compute/" + INSTANCE_ID);
-		request.addHeader(ConstantsManager.CONTENT_TYPE, ConstantsManager.OCCI_CONTENT_TYPE);
-		request.addHeader(ConstantsManager.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(Constants.CONTENT_TYPE, Constants.OCCI_CONTENT_TYPE);
+		request.addHeader(Constants.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --delete --url " + Main.DEFAULT_URL + " " + "--id "
