@@ -141,13 +141,13 @@ public class Main {
 				doRequest("delete", url + "/compute/" + instance.instanceId, instance.authToken);
 			}
 		} else if (parsedCommand.equals("token")) {
-			String type = token.type;
-
-			String propName = "";
-			// String propName = "org.fogbowcloud.manager.core.plugins.openstack.OpenStackIdentityPlugin";
+			
+			String className = "";
+//			String className = getClassName(token.type);
+//			String className = "org.fogbowcloud.manager.core.plugins.openstack.OpenStackIdentityPlugin";
 			IdentityPlugin identityPlugin = null;
 			try {
-				identityPlugin = (IdentityPlugin) createInstance(propName, new Properties());
+				identityPlugin = (IdentityPlugin) createInstance(className, new Properties());
 			} catch (Exception e) {
 				System.out.println("Not found Identity Plugin.");
 				return;
@@ -172,8 +172,8 @@ public class Main {
 		return token.getAccessId();
 	}
 
-	private static Object createInstance(String propName, Properties properties) throws Exception {
-		return Class.forName(propName).getConstructor(Properties.class).newInstance(properties);
+	private static Object createInstance(String className, Properties properties) throws Exception {
+		return Class.forName(className).getConstructor(Properties.class).newInstance(properties);
 	}
 
 	private static String normalizeToken(String token) {
