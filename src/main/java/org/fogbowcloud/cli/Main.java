@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import main.java.org.fogbowcloud.cli.util.Constants;
@@ -26,6 +27,8 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
+import org.fogbowcloud.manager.occi.core.Token;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -103,8 +106,7 @@ public class Main {
 
 				Set<Header> headers = new HashSet<Header>();
 				headers.add(new BasicHeader("Category", Constants.TERM + "; scheme=\""
-						+ Constants.SCHEME + "\"; class=\"" + Constants.KIND_CLASS
-						+ "\""));
+						+ Constants.SCHEME + "\"; class=\"" + Constants.KIND_CLASS + "\""));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						"org.fogbowcloud.request.instance-count=" + request.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type="
@@ -113,8 +115,8 @@ public class Main {
 						+ Constants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
 						+ Constants.MIXIN_CLASS + "\""));
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
-						+ Constants.TEMPLATE_OS_SCHEME + "\"; class=\""
-						+ Constants.MIXIN_CLASS + "\""));
+						+ Constants.TEMPLATE_OS_SCHEME + "\"; class=\"" + Constants.MIXIN_CLASS
+						+ "\""));
 				doRequest("post", url + "/" + Constants.TERM, request.authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
@@ -139,11 +141,23 @@ public class Main {
 				doRequest("delete", url + "/compute/" + instance.instanceId, instance.authToken);
 			}
 		} else if (parsedCommand.equals("token")) {
-			String url = token.url;
+			String type = token.type;
 
-			Set<Header> headers = getCredentialHeaders(token.credentials);
+			String propName = "";
+			// String propName = "org.fogbowcloud.manager.core.plugins.openstack.OpenStackIdentityPlugin";
+			IdentityPlugin identityPlugin = null;
+			try {
+				identityPlugin = (IdentityPlugin) createInstance(propName, new Properties());
+			} catch (Exception e) {
+				System.out.println("Not found Identity Plugin.");
+				return;
+			}
 
-			doRequest("get", url + "/token", null, headers);
+			try {
+				System.out.println(generateResponse(identityPlugin.createToken(token.credentials)));
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
 
@@ -151,21 +165,22 @@ public class Main {
 		}
 	}
 
+	private static String generateResponse(Token token) {
+		if (token == null) {
+			return new String();
+		}
+		return token.getAccessId();
+	}
+
+	private static Object createInstance(String propName, Properties properties) throws Exception {
+		return Class.forName(propName).getConstructor(Properties.class).newInstance(properties);
+	}
+
 	private static String normalizeToken(String token) {
 		if (token == null) {
 			return null;
-		}		
-		return token.replace(Constants.BREAK_LINE_REPLACE, "");
-	}
-
-	private static Set<Header> getCredentialHeaders(Map<String, String> mapCredentials) {
-		Set<Header> headers = new HashSet<Header>();
-		
-		for (String keyMapCredentials : mapCredentials.keySet()) {
-			headers.add(new BasicHeader(keyMapCredentials, mapCredentials.get(keyMapCredentials)));
 		}
-
-		return headers;
+		return token.replace(Constants.BREAK_LINE_REPLACE, "");
 	}
 
 	private static void doRequest(String method, String endpoint, String authToken)
@@ -269,9 +284,12 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
-	private static class TokenCommand extends Command {
-		@Parameter(names = "--get", description = "Get token")
-		Boolean get = false;
+	private static class TokenCommand {
+		@Parameter(names = "--create", description = "Get token")
+		Boolean create = false;
+
+		@Parameter(names = "--type", description = "Identity Plugin Type")
+		String type = null;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		private Map<String, String> credentials = new HashMap<String, String>();
