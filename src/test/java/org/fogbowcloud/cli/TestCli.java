@@ -1,6 +1,8 @@
 package org.fogbowcloud.cli;
 
 import java.util.HashMap;
+import java.util.Properties;
+import java.util.Set;
 
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -16,6 +18,7 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
+import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
@@ -24,6 +27,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
 
 public class TestCli {
 
@@ -253,6 +259,33 @@ public class TestCli {
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void testGetCredentialsInformation() {
+		Reflections reflections = new Reflections(ClasspathHelper.forPackage(Main.PLUGIN_PACKAGE),
+				new SubTypesScanner());
+
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
+
+		String response = cli.getPluginCredentialsInformation(allClasses);
+
+		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
+			IdentityPlugin identityPlugin = null;
+			try {
+				identityPlugin = (IdentityPlugin) cli.createInstance(eachClass, new Properties());
+			} catch (Exception e) {
+			}
+			for (Credential credential : identityPlugin.getCredentials()) {
+				Assert.assertTrue(response.contains(credential.getName()));
+				if (credential.getValueDefault() != null) {
+					Assert.assertTrue(response.contains(credential.getValueDefault()));
+				}
+			}
+		}
+
 	}
 
 	private String[] createArgs(String command) throws Exception {

@@ -43,7 +43,7 @@ import com.beust.jcommander.Parameters;
 
 public class Main {
 
-	private static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins";
+	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins";
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
 	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
@@ -201,25 +201,25 @@ public class Main {
 		try {
 			return generateResponse(identityPlugin.createToken(token.credentials));
 		} catch (Exception e) {
-			return e.getMessage() + "\n" + getPluginCredentialsText(allClasses);
+			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);
 		}
 	}
 	
-	private static String getPluginCredentialsText(Set<Class<? extends IdentityPlugin>> allClasses) {
+	protected static String getPluginCredentialsInformation(
+			Set<Class<? extends IdentityPlugin>> allClasses) {
 		StringBuilder response = new StringBuilder();
 		response.append("Credentials :\n");
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
-			String[] packageName = eachClass.getName().split("\\.");
+			String[] identityPluginFullName = eachClass.getName().split("\\.");
 			IdentityPlugin identityPlugin = null;
 			try {
-				identityPlugin = (IdentityPlugin) createInstance(
-						eachClass, new Properties());				
-			} catch (Exception e) {				
+				identityPlugin = (IdentityPlugin) createInstance(eachClass, new Properties());
+			} catch (Exception e) {
 			}
 			if (identityPlugin.getCredentials() == null) {
 				continue;
 			}
-			response.append("* " + packageName[packageName.length - 1] + "\n");
+			response.append("* " + identityPluginFullName[identityPluginFullName.length - 1] + "\n");
 			for (Credential credential : identityPlugin.getCredentials()) {
 				String valueDefault = "";
 				if (credential.getValueDefault() != null) {
@@ -243,7 +243,7 @@ public class Main {
 		return token.getAccessId();
 	}
 
-	private static Object createInstance(Class<?> pluginClass, Properties properties)
+	protected static Object createInstance(Class<?> pluginClass, Properties properties)
 			throws Exception {
 		return pluginClass.getConstructor(Properties.class).newInstance(properties);
 	}
