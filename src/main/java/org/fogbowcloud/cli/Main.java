@@ -28,6 +28,7 @@ import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
+import org.fogbowcloud.manager.core.plugins.util.CredentialsInterface;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
@@ -50,6 +51,7 @@ public class Main {
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
+	private static IdentityPlugin identityPlugin;
 
 	public static void main(String[] args) throws Exception {
 		JCommander jc = new JCommander();
@@ -154,14 +156,22 @@ public class Main {
 				doRequest("delete", url + "/compute/" + instance.instanceId, instance.authToken);
 			}
 		} else if (parsedCommand.equals("token")) {
-			createToken(token);
+			System.out.println(createToken(token));
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
 			doRequest("get", url + "/-/", null);
 		}
 	}
 
-	private static void createToken(TokenCommand token) {
+	public static void setIdentityPlugin(IdentityPlugin identityPlugin) {
+		Main.identityPlugin = identityPlugin;
+	}
+	
+	public static IdentityPlugin getIdentityPlugin() {
+		return identityPlugin;
+	}
+	
+	protected static String createToken(TokenCommand token) {
 		Reflections reflections = new Reflections(
 				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
 		        new SubTypesScanner());
@@ -171,7 +181,7 @@ public class Main {
 		Class<?> pluginClass = null;
 		List<String> possibleTypes = new LinkedList<String>();
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
-			String[] packageName = eachClass.getPackage().getName().split("\\.");
+			String[] packageName = eachClass.getName().split("\\.");
 			String type = packageName[packageName.length - 1];
 			possibleTypes.add(type);
 			if (type.equals(token.type)) {
@@ -179,21 +189,50 @@ public class Main {
 			}
 		}
 		
-		IdentityPlugin identityPlugin = null;
 		try {
-			identityPlugin = (IdentityPlugin) createInstance(
-					pluginClass, new Properties());
+			if (identityPlugin == null) {
+				identityPlugin = (IdentityPlugin) createInstance(pluginClass, new Properties());
+			}
 		} catch (Exception e) {
-			System.out.println("Token type [" + token.type + "] is not valid. "
-					+ "Possible types: " + possibleTypes + ".");
-			return;
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ possibleTypes + ".";
 		}
 
 		try {
-			System.out.println(generateResponse(identityPlugin.createToken(token.credentials)));
+			return generateResponse(identityPlugin.createToken(token.credentials));
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			return e.getMessage() + "\n" + getPluginCredentialsText(allClasses);
 		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private static String getPluginCredentialsText(Set<Class<? extends IdentityPlugin>> allClasses) {
+		StringBuilder response = new StringBuilder();
+		response.append("Credentials :\n");
+		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
+			String[] packageName = eachClass.getName().split("\\.");
+			IdentityPlugin identityPlugin = null;
+			try {
+				identityPlugin = (IdentityPlugin) createInstance(
+						eachClass, new Properties());				
+			} catch (Exception e) {				
+			}
+			if (identityPlugin.getCredentials() == null) {
+				continue;
+			}
+			response.append("* " + packageName[packageName.length - 1] + "\n");
+			for (Enum e : identityPlugin.getCredentials()) {
+				CredentialsInterface c = (CredentialsInterface) e;
+				String valueDefault = "";
+				if (c.getValueDefault() != null) {
+					valueDefault = " - default :" + c.getValueDefault();
+				}
+				response.append("   -D" + c.getName() + " (" + c.getFeature() + ")"
+						+ valueDefault + "\n");
+				
+			}
+		}
+		return response.toString().trim();
 	}
 
 	private static String generateResponse(Token token) {
@@ -316,7 +355,7 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
-	private static class TokenCommand {
+	protected static class TokenCommand {
 		@Parameter(names = "--create", description = "Create token")
 		Boolean create = false;
 
@@ -324,7 +363,7 @@ public class Main {
 		String type = null;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
-		private Map<String, String> credentials = new HashMap<String, String>();
+		Map<String, String> credentials = new HashMap<String, String>();
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")

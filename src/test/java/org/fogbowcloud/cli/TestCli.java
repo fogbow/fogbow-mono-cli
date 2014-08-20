@@ -1,5 +1,7 @@
 package org.fogbowcloud.cli;
 
+import java.util.HashMap;
+
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseFactory;
@@ -12,15 +14,16 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.message.BasicStatusLine;
+import org.fogbowcloud.cli.Main.TokenCommand;
+import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
+import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
-
-import com.beust.jcommander.ParameterException;
 
 public class TestCli {
 
@@ -44,27 +47,20 @@ public class TestCli {
 		cli.setClient(client);
 	}
 
-	@Ignore
-	@SuppressWarnings("static-access")
+	@SuppressWarnings({ "static-access", "unchecked" })
 	@Test
 	public void commandGetToken() throws Exception {
-		final String user = "admin";
-		final String password = "reverse";
-		final String tenantName = "admin";
-
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/token");
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("username", user);
-		request.addHeader("password", password);
-		request.addHeader("tenantName", tenantName);
-		expectedRequest = new HttpUriRequestMatcher(request);
-
-		String command = "token --create --url " + Main.DEFAULT_URL + " -Dusername=" + user
-				+ "  -DtenantName=" + tenantName + " -Dpassword=" + password;
-
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
+		String accessId = "AccessId";
+		Token token = new Token(accessId , "user", null, null);
+		Mockito.when(identityPlugin.createToken(Mockito.anyMap())).thenReturn(token);
+		
+		TokenCommand tokenCommand = new TokenCommand();
+		tokenCommand.type = "OpenStackIdentityPlugin";
+		tokenCommand.credentials = new HashMap<String, String>();	
+	
+		cli.setIdentityPlugin(identityPlugin);
+		Assert.assertEquals(accessId, cli.createToken(tokenCommand));
 	}
 
 	@SuppressWarnings("static-access")
@@ -78,17 +74,8 @@ public class TestCli {
 		String command = "instance --get --auth-token "
 				+ ACCESS_TOKEN_ID;
 		cli.main(createArgs(command));
-
+			
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}
-
-	@Ignore
-	@SuppressWarnings("static-access")
-	@Test(expected = ParameterException.class)
-	public void commandWrongSyntax() throws Exception {
-		String command = "--get --url http://localhost:8182 -Dusername=admin"
-				+ "  -DtenantName=admin -Dpassword=reverse";
-		cli.main(createArgs(command));
 	}
 
 	@SuppressWarnings("static-access")
@@ -271,8 +258,8 @@ public class TestCli {
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
 	}
-
-	class HttpUriRequestMatcher extends ArgumentMatcher<HttpUriRequest> {
+	
+	private class HttpUriRequestMatcher extends ArgumentMatcher<HttpUriRequest> {
 
 		private HttpUriRequest request;
 
