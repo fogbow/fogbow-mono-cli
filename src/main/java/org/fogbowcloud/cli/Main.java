@@ -28,7 +28,7 @@ import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
-import org.fogbowcloud.manager.core.plugins.util.CredentialsInterface;
+import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
@@ -205,7 +205,6 @@ public class Main {
 		}
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private static String getPluginCredentialsText(Set<Class<? extends IdentityPlugin>> allClasses) {
 		StringBuilder response = new StringBuilder();
 		response.append("Credentials :\n");
@@ -221,15 +220,17 @@ public class Main {
 				continue;
 			}
 			response.append("* " + packageName[packageName.length - 1] + "\n");
-			for (Enum e : identityPlugin.getCredentials()) {
-				CredentialsInterface c = (CredentialsInterface) e;
+			for (Credential credential : identityPlugin.getCredentials()) {
 				String valueDefault = "";
-				if (c.getValueDefault() != null) {
-					valueDefault = " - default :" + c.getValueDefault();
+				if (credential.getValueDefault() != null) {
+					valueDefault = " - default :" + credential.getValueDefault();
 				}
-				response.append("   -D" + c.getName() + " (" + c.getFeature() + ")"
+				String feature = "Optional";
+				if (credential.isRequired()) {
+					feature = "Required";
+				}
+				response.append("   -D" + credential.getName() + " (" + feature + ")"
 						+ valueDefault + "\n");
-				
 			}
 		}
 		return response.toString().trim();
