@@ -1,4 +1,4 @@
-package main.java.org.fogbowcloud.cli.util;
+package org.fogbowcloud.cli.util;
 
 public class Constants {
 

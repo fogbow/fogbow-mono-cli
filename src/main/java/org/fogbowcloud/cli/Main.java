@@ -1,14 +1,14 @@
-package main.java.org.fogbowcloud.cli;
+package org.fogbowcloud.cli;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import main.java.org.fogbowcloud.cli.util.Constants;
 
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -27,8 +27,12 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+import org.fogbowcloud.cli.util.Constants;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.occi.core.Token;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -37,11 +41,12 @@ import com.beust.jcommander.Parameters;
 
 public class Main {
 
-	public static final String DEFAULT_URL = "http://localhost:8182";
-	public static final int DEFAULT_INTANCE_COUNT = 1;
-	public static final String DEFAULT_TYPE = Constants.DEFAULT_TYPE;
-	public static final String DEFAULT_FLAVOR = Constants.SMALL_TERM;
-	public static final String DEFAULT_IMAGE = "fogbow-linux-x86";
+	private static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins";
+	protected static final String DEFAULT_URL = "http://localhost:8182";
+	protected static final int DEFAULT_INTANCE_COUNT = 1;
+	protected static final String DEFAULT_TYPE = Constants.DEFAULT_TYPE;
+	protected static final String DEFAULT_FLAVOR = Constants.SMALL_TERM;
+	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
 
@@ -60,7 +65,13 @@ public class Main {
 		jc.addCommand("resource", resource);
 
 		jc.setProgramName("fogbow-cli");
-		jc.parse(args);
+		try {
+			jc.parse(args);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			jc.usage();
+			return;
+		}
 
 		String parsedCommand = jc.getParsedCommand();
 
@@ -141,27 +152,45 @@ public class Main {
 				doRequest("delete", url + "/compute/" + instance.instanceId, instance.authToken);
 			}
 		} else if (parsedCommand.equals("token")) {
-			
-			String className = "";
-//			String className = getClassName(token.type);
-//			String className = "org.fogbowcloud.manager.core.plugins.openstack.OpenStackIdentityPlugin";
-			IdentityPlugin identityPlugin = null;
-			try {
-				identityPlugin = (IdentityPlugin) createInstance(className, new Properties());
-			} catch (Exception e) {
-				System.out.println("Not found Identity Plugin.");
-				return;
-			}
-
-			try {
-				System.out.println(generateResponse(identityPlugin.createToken(token.credentials)));
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
-			}
+			createToken(token);
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
-
 			doRequest("get", url + "/-/", null);
+		}
+	}
+
+	private static void createToken(TokenCommand token) {
+		Reflections reflections = new Reflections(
+				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
+		        new SubTypesScanner());
+		
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
+		Class<?> pluginClass = null;
+		List<String> possibleTypes = new LinkedList<String>();
+		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
+			String[] packageName = eachClass.getPackage().getName().split("\\.");
+			String type = packageName[packageName.length - 1];
+			possibleTypes.add(type);
+			if (type.equals(token.type)) {
+				pluginClass = eachClass;
+			}
+		}
+		
+		IdentityPlugin identityPlugin = null;
+		try {
+			identityPlugin = (IdentityPlugin) createInstance(
+					pluginClass, new Properties());
+		} catch (Exception e) {
+			System.out.println("Token type [" + token.type + "] is not valid. "
+					+ "Possible types: " + possibleTypes + ".");
+			return;
+		}
+
+		try {
+			System.out.println(generateResponse(identityPlugin.createToken(token.credentials)));
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
 		}
 	}
 
@@ -172,8 +201,8 @@ public class Main {
 		return token.getAccessId();
 	}
 
-	private static Object createInstance(String className, Properties properties) throws Exception {
-		return Class.forName(className).getConstructor(Properties.class).newInstance(properties);
+	private static Object createInstance(Class<?> pluginClass, Properties properties) throws Exception {
+		return pluginClass.getConstructor(Properties.class).newInstance(properties);
 	}
 
 	private static String normalizeToken(String token) {
@@ -285,17 +314,17 @@ public class Main {
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
 	private static class TokenCommand {
-		@Parameter(names = "--create", description = "Get token")
+		@Parameter(names = "--create", description = "Create token")
 		Boolean create = false;
 
-		@Parameter(names = "--type", description = "Identity Plugin Type")
+		@Parameter(names = "--type", description = "Token type", required = true)
 		String type = null;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		private Map<String, String> credentials = new HashMap<String, String>();
 	}
 
-	@Parameters(separators = "=", commandDescription = "Resources Fogbow")
+	@Parameters(separators = "=", commandDescription = "OCCI resources")
 	private static class ResourceCommand extends Command {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;

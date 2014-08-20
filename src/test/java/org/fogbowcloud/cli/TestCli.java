@@ -1,7 +1,7 @@
-package test.java.org.fogbowcloud.cli;
+package org.fogbowcloud.cli;
 
-import main.java.org.fogbowcloud.cli.Main;
-import main.java.org.fogbowcloud.cli.util.Constants;
+import org.fogbowcloud.cli.Main;
+import org.fogbowcloud.cli.util.Constants;
 
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
