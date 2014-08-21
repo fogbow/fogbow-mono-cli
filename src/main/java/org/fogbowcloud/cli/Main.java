@@ -27,6 +27,9 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
@@ -54,6 +57,8 @@ public class Main {
 	private static IdentityPlugin identityPlugin;
 
 	public static void main(String[] args) throws Exception {
+		configureLog4j();
+		
 		JCommander jc = new JCommander();
 
 		MemberCommand member = new MemberCommand();
@@ -161,6 +166,13 @@ public class Main {
 			String url = resource.url;
 			doRequest("get", url + "/-/", null);
 		}
+	}
+	
+	private static void configureLog4j() {
+		ConsoleAppender console = new ConsoleAppender();
+		console.setThreshold(Level.OFF);
+		console.activateOptions();
+		Logger.getRootLogger().addAppender(console);
 	}
 
 	public static void setIdentityPlugin(IdentityPlugin identityPlugin) {
