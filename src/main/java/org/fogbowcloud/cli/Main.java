@@ -34,6 +34,7 @@ import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
+import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -127,16 +128,25 @@ public class Main {
 				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
 						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
 						+ "\""));
-				headers.add(new BasicHeader("X-OCCI-Attribute",
-						"org.fogbowcloud.request.instance-count=" + request.instanceCount));
-				headers.add(new BasicHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type="
-						+ request.type));
+				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.INSTANCE_COUNT
+						.getValue() + "=" + request.instanceCount));
+				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
+						+ "=" + request.type));
 				headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
 						+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
+				
+				if (request.publicKey != null && !request.publicKey.isEmpty()) {
+					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
+							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
+							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
+				}
+				
 				doRequest("post", url + "/" + RequestConstants.TERM, request.authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
@@ -353,6 +363,9 @@ public class Main {
 
 		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
+		
+		@Parameter(names = "--publicKey", description = "Public key")
+		String publicKey = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
