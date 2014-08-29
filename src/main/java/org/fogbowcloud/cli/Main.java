@@ -174,7 +174,8 @@ public class Main {
 			System.out.println(createToken(token));
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
-			doRequest("get", url + "/-/", null);
+			String authToken = normalizeToken(resource.authToken);
+			doRequest("get", url + "/-/", authToken);
 		}
 	}
 	
@@ -393,7 +394,7 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
-	private static class ResourceCommand extends Command {
+	private static class ResourceCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
