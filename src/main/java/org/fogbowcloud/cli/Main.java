@@ -205,7 +205,7 @@ public class Main {
 		List<String> possibleTypes = new LinkedList<String>();
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] packageName = eachClass.getName().split("\\.");
-			String type = packageName[packageName.length - 1];
+			String type = packageName[packageName.length - 2];
 			possibleTypes.add(type);
 			if (type.equals(token.type)) {
 				pluginClass = eachClass;
