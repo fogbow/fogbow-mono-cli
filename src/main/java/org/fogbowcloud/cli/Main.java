@@ -150,11 +150,14 @@ public class Main {
 						return;
 					}
 
+					System.out.println(request.publicKey);
+					
 					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
 							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
 							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
+					System.out.println(RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey);
 				}
 				
 				doRequest("post", url + "/" + RequestConstants.TERM, request.authToken, headers);
@@ -204,11 +207,10 @@ public class Main {
 	}
 	
 	@SuppressWarnings("resource")
-	private static String getFileContent(String path) throws IOException {
-		String fileContent = "";
-		
+	private static String getFileContent(String path) throws IOException {		
 		FileReader reader = new FileReader(path);
 		BufferedReader leitor = new BufferedReader(reader);
+		String fileContent = "";
 		String linha = "";
 		while (true) {
 			linha = leitor.readLine();
@@ -216,7 +218,7 @@ public class Main {
 				break;
 			fileContent += linha + "\n";
 		}
-		return fileContent;
+		return fileContent.trim();
 	}
 	
 	protected static String createToken(TokenCommand token) {
