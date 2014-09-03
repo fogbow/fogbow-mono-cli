@@ -184,7 +184,8 @@ public class Main {
 			System.out.println(createToken(token));
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
-			doRequest("get", url + "/-/", null);
+			String authToken = normalizeToken(resource.authToken);
+			doRequest("get", url + "/-/", authToken);
 		}
 	}
 	
@@ -229,7 +230,7 @@ public class Main {
 		List<String> possibleTypes = new LinkedList<String>();
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] packageName = eachClass.getName().split("\\.");
-			String type = packageName[packageName.length - 1];
+			String type = packageName[packageName.length - 2];
 			possibleTypes.add(type);
 			if (type.equals(token.type)) {
 				pluginClass = eachClass;
@@ -418,7 +419,7 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
-	private static class ResourceCommand extends Command {
+	private static class ResourceCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
