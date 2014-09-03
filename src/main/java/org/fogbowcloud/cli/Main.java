@@ -149,15 +149,12 @@ public class Main {
 						System.out.println("Public key file not found.");
 						return;
 					}
-
-					System.out.println(request.publicKey);
 					
 					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
 							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
 							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
-					System.out.println(RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey);
 				}
 				
 				doRequest("post", url + "/" + RequestConstants.TERM, request.authToken, headers);
