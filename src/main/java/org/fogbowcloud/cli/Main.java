@@ -1,5 +1,7 @@
 package org.fogbowcloud.cli;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -123,7 +125,7 @@ public class Main {
 					jc.usage();
 					return;
 				}
-
+				
 				Set<Header> headers = new HashSet<Header>();
 				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
 						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
@@ -138,8 +140,16 @@ public class Main {
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
-				
+
 				if (request.publicKey != null && !request.publicKey.isEmpty()) {
+
+					try {
+						request.publicKey = getFileContent(request.publicKey);
+					} catch (IOException e) {
+						System.out.println("Public key file not found.");
+						return;
+					}
+
 					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
 							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
 							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
@@ -174,8 +184,7 @@ public class Main {
 			System.out.println(createToken(token));
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
-			String authToken = normalizeToken(resource.authToken);
-			doRequest("get", url + "/-/", authToken);
+			doRequest("get", url + "/-/", null);
 		}
 	}
 	
@@ -194,6 +203,22 @@ public class Main {
 		return identityPlugin;
 	}
 	
+	@SuppressWarnings("resource")
+	private static String getFileContent(String path) throws IOException {
+		String fileContent = "";
+		
+		FileReader reader = new FileReader(path);
+		BufferedReader leitor = new BufferedReader(reader);
+		String linha = "";
+		while (true) {
+			linha = leitor.readLine();
+			if (linha == null)
+				break;
+			fileContent += linha + "\n";
+		}
+		return fileContent;
+	}
+	
 	protected static String createToken(TokenCommand token) {
 		Reflections reflections = new Reflections(
 				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
@@ -205,7 +230,7 @@ public class Main {
 		List<String> possibleTypes = new LinkedList<String>();
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] packageName = eachClass.getName().split("\\.");
-			String type = packageName[packageName.length - 2];
+			String type = packageName[packageName.length - 1];
 			possibleTypes.add(type);
 			if (type.equals(token.type)) {
 				pluginClass = eachClass;
@@ -365,7 +390,7 @@ public class Main {
 		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
-		@Parameter(names = "--publicKey", description = "Public key")
+		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
 	}
 
@@ -394,7 +419,7 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
-	private static class ResourceCommand extends AuthedCommand {
+	private static class ResourceCommand extends Command {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
