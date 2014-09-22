@@ -126,7 +126,7 @@ public class Main {
 					return;
 				}
 				
-				Set<Header> headers = new HashSet<Header>();
+				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
 						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
 						+ "\""));
@@ -305,11 +305,11 @@ public class Main {
 
 	private static void doRequest(String method, String endpoint, String authToken)
 			throws URISyntaxException, HttpException, IOException {
-		doRequest(method, endpoint, authToken, new HashSet<Header>());
+		doRequest(method, endpoint, authToken, new LinkedList<Header>());
 	}
 
 	private static void doRequest(String method, String endpoint, String authToken,
-			Set<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
+			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
 			request = new HttpGet(endpoint);
