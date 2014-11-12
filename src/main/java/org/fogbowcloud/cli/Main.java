@@ -5,7 +5,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -336,7 +335,8 @@ public class Main {
 
 		HttpResponse response = client.execute(request);
 
-		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
+				|| response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) {
 			System.out.println(EntityUtils.toString(response.getEntity()));
 		} else {
 			System.out.println(response.getStatusLine().toString());
