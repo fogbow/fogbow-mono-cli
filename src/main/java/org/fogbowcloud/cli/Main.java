@@ -33,6 +33,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
+import org.fogbowcloud.manager.occi.core.HeaderUtils;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestAttribute;
@@ -40,6 +41,7 @@ import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
+import org.restlet.util.Series;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -324,7 +326,7 @@ public class Main {
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
 		}
-
+		
 		if (client == null) {
 			client = new DefaultHttpClient();
 			HttpParams params = new BasicHttpParams();
@@ -334,13 +336,37 @@ public class Main {
 		}
 
 		HttpResponse response = client.execute(request);
-
+		
 		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
 				|| response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) {
-			System.out.println(EntityUtils.toString(response.getEntity()));
+			Header locationHeader = getLocationHeader(response.getAllHeaders());
+			if (locationHeader != null && locationHeader.getValue().contains(RequestConstants.TERM)) {
+				System.out.println(generateLocationHeaderResponse(locationHeader));
+			} else {
+				System.out.println(EntityUtils.toString(response.getEntity()));
+			}
 		} else {
 			System.out.println(response.getStatusLine().toString());
 		}
+	}	
+	
+	protected static Header getLocationHeader(Header[] headers) {
+		Header locationHeader = null;
+		for (Header header : headers) {	
+			if (header.getName().equals("Location")) {
+				locationHeader = header;
+			}
+		}
+		return locationHeader;
+	}
+	
+	protected static String generateLocationHeaderResponse(Header header) {
+		String[] locations = header.getValue().split(",");
+		String response = "";
+		for (String location : locations) {
+			response += HeaderUtils.X_OCCI_LOCATION_PREFIX + location + "\n";
+		}
+		return response.trim();
 	}
 
 	public static void setClient(HttpClient client) {

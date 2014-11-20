@@ -15,10 +15,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.DefaultHttpResponseFactory;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
+import org.fogbowcloud.manager.occi.core.HeaderUtils;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
@@ -288,6 +290,32 @@ public class TestCli {
 
 	}
 
+	@Test
+	public void testGetLocationHeader() {
+		Header[] headers = new Header[3];
+		String responseOk = "OK";
+		headers[0] = new BasicHeader("Location", responseOk);
+		headers[1] = new BasicHeader("Test1", "");
+		headers[2] = new BasicHeader("Test2", "");
+		Header locationHeader = Main.getLocationHeader(headers);
+		Assert.assertEquals(responseOk, locationHeader.getValue());
+	}
+
+	@Test
+	public void testGenerateLocationHeaderResponse() {
+		Header[] headers = new Header[2];
+		String value1 = "value1";
+		String value2 = "value2";
+		String valueLocationHeader = value1 + "," + value2;
+		headers[0] = new BasicHeader("Location", valueLocationHeader);
+		headers[1] = new BasicHeader("Test1", "");
+		Header locationHeader = Main.getLocationHeader(headers);
+		String response = Main.generateLocationHeaderResponse(locationHeader);
+		String correctResponse = HeaderUtils.X_OCCI_LOCATION_PREFIX + value1 +
+				"\n" + HeaderUtils.X_OCCI_LOCATION_PREFIX + value2;
+		Assert.assertEquals(correctResponse, response);
+	}
+	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
 	}
