@@ -5,7 +5,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +125,7 @@ public class Main {
 					return;
 				}
 				
-				Set<Header> headers = new HashSet<Header>();
+				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
 						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
 						+ "\""));
@@ -305,11 +304,11 @@ public class Main {
 
 	private static void doRequest(String method, String endpoint, String authToken)
 			throws URISyntaxException, HttpException, IOException {
-		doRequest(method, endpoint, authToken, new HashSet<Header>());
+		doRequest(method, endpoint, authToken, new LinkedList<Header>());
 	}
 
 	private static void doRequest(String method, String endpoint, String authToken,
-			Set<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
+			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
 			request = new HttpGet(endpoint);
@@ -336,7 +335,8 @@ public class Main {
 
 		HttpResponse response = client.execute(request);
 
-		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
+				|| response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) {
 			System.out.println(EntityUtils.toString(response.getEntity()));
 		} else {
 			System.out.println(response.getStatusLine().toString());
