@@ -1,9 +1,14 @@
 package org.fogbowcloud.cli;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseFactory;
@@ -53,7 +58,7 @@ public class TestCli {
 				HttpStatus.SC_NO_CONTENT, "Return Irrelevant"), null);
 		Mockito.when(client.execute(Mockito.any(HttpUriRequest.class))).thenReturn(response);
 		cli.setClient(client);
-	}
+	}	
 
 	@SuppressWarnings({ "static-access", "unchecked" })
 	@Test
@@ -315,6 +320,26 @@ public class TestCli {
 				"\n" + HeaderUtils.X_OCCI_LOCATION_PREFIX + value2;
 		Assert.assertEquals(correctResponse, response);
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void TestNormalizeToken() throws FileNotFoundException, IOException {
+		String token = "Test\nSpace";
+		String tokenNormalized = cli.normalizeToken(token);
+		Assert.assertEquals(token.replace("\n", ""), tokenNormalized);
+				
+		File file = new File("src/test/resource/get_content");
+		token = IOUtils.toString(new FileInputStream(file));
+		Assert.assertTrue(token.length() > 0);
+		
+		file = new File("src/test/resource/wrong");
+		try {
+			token = IOUtils.toString(new FileInputStream(file));		
+		} catch (Exception e) {
+			token = null;
+		}
+		Assert.assertNull(token);
+	}	
 	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");

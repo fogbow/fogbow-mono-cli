@@ -1,6 +1,8 @@
 package org.fogbowcloud.cli;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -11,6 +13,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -41,7 +44,6 @@ import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
-import org.restlet.util.Series;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -297,10 +299,20 @@ public class Main {
 		return pluginClass.getConstructor(Properties.class).newInstance(properties);
 	}
 
-	private static String normalizeToken(String token) {
+	protected static String normalizeToken(String token) {
 		if (token == null) {
 			return null;
 		}
+		
+		File tokenFile = new File(token);
+		if (tokenFile.exists()) {
+			try {
+				token = IOUtils.toString(new FileInputStream(tokenFile));
+			} catch (Exception e) {
+				// do nothing
+			}
+		}
+		
 		return token.replace(Token.BREAK_LINE_REPLACE, "");
 	}
 
