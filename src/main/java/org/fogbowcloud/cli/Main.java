@@ -319,7 +319,7 @@ public class Main {
 		}
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		if (authToken != null) {
-			request.addHeader(OCCIHeaders.X_AUTH_TOKEN, authToken);
+			request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, authToken);
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
