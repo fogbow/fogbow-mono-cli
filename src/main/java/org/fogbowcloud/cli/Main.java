@@ -34,6 +34,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.fogbowcloud.manager.core.ConfigurationConstants;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.HeaderUtils;
@@ -206,7 +207,11 @@ public class Main {
 						localToken);
 			}
 		} else if (parsedCommand.equals("token")) {
-			System.out.println(createToken(token));
+			if (token.check) {
+				System.out.println(checkToken(token));
+			} else {
+				System.out.println(createToken(token));							
+			}
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
 			
@@ -251,6 +256,48 @@ public class Main {
 			fileContent += linha + "\n";
 		}
 		return fileContent.trim();
+	}
+	
+	protected static String checkToken(TokenCommand token) {
+		Reflections reflections = new Reflections(
+				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
+		        new SubTypesScanner());
+		
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
+		Class<?> pluginClass = null;
+		List<String> possibleTypes = new LinkedList<String>();
+		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
+			String[] packageName = eachClass.getName().split("\\.");
+			String type = packageName[packageName.length - 2];
+			possibleTypes.add(type);
+			if (type.equals(token.type)) {
+				pluginClass = eachClass;
+			}
+		}
+		
+		try {
+			if (identityPlugin == null) {
+				Map<String, String> credentials = token.credentials;			
+				Properties properties = new Properties();
+				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
+			}
+		} catch (Exception e) {
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ possibleTypes + ".";
+		}
+		
+		try {
+			boolean isValid = identityPlugin.isValid(token.token);
+			if (isValid) {
+				return "Token Valid";
+			} else {
+				return "Token Unauthorized";
+			}
+		} catch (Exception e) {
+			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);
+		}	
 	}
 	
 	protected static String createToken(TokenCommand token) {
@@ -509,6 +556,12 @@ public class Main {
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		Map<String, String> credentials = new HashMap<String, String>();
+		
+		@Parameter(names = "--check", description = "Check token")
+		Boolean check = false;
+		
+		@Parameter(names = "--token", description = "Token Pure")
+		String token = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
@@ -516,4 +569,5 @@ public class Main {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
+	
 }
