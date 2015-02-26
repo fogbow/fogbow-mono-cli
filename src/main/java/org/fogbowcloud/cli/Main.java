@@ -318,13 +318,17 @@ public class Main {
 			}
 		}
 		
+		if (pluginClass == null) {
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ possibleTypes + ".";
+		}
+		
 		try {
 			if (identityPlugin == null) {
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, new Properties());
 			}
 		} catch (Exception e) {
-			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
-					+ possibleTypes + ".";
+			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);
 		}
 
 		try {
