@@ -296,7 +296,7 @@ public class Main {
 				return "Token Unauthorized";
 			}
 		} catch (Exception e) {
-			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);
+			return "Token Unauthorized";
 		}	
 	}
 	
@@ -393,7 +393,7 @@ public class Main {
 			try {
 				token = IOUtils.toString(new FileInputStream(tokenFile));
 			} catch (Exception e) {
-				// do nothing
+				return null;
 			}
 		} else {
 			return null;
