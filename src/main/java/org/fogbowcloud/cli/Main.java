@@ -259,7 +259,7 @@ public class Main {
 		}
 		return fileContent.trim();
 	}
-	
+		
 	protected static String getTokenInfo(TokenCommand token) {
 		Reflections reflections = new Reflections(
 				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
@@ -267,20 +267,35 @@ public class Main {
 		
 		Set<Class<? extends IdentityPlugin>> allClasses = reflections
 				.getSubTypesOf(IdentityPlugin.class);
-		for (Class<? extends IdentityPlugin> pluginClass : allClasses) {
-			try {
+		Class<?> pluginClass = null;
+		List<String> possibleTypes = new LinkedList<String>();
+		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
+			String[] packageName = eachClass.getName().split("\\.");
+			String type = packageName[packageName.length - 2];
+			possibleTypes.add(type);
+			if (type.equals(token.type)) {
+				pluginClass = eachClass;
+			}
+		}
+		
+		try {
+			if (identityPlugin == null) {
 				Map<String, String> credentials = token.credentials;			
 				Properties properties = new Properties();
 				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
-				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties );
-				Token tokenInfo = identityPlugin.getToken(token.token);
-				return tokenInfo.toString();
-			} catch (Exception e) {
-				// Do Nothing
+				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
+				try {
+					Token tokenInfo = identityPlugin.getToken(token.token);
+					return tokenInfo.toString();					
+				} catch (Exception e) {
+					// Do Nothing
+				}
 			}
-		}
-
-		return "No result.";
+		} catch (Exception e) {
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ possibleTypes + ".";
+		}	
+		return "No Result.";
 	}
 	
 	protected static String checkToken(TokenCommand token) {
