@@ -69,7 +69,7 @@ public class TestCli {
 		Mockito.when(identityPlugin.createToken(Mockito.anyMap())).thenReturn(token);
 		
 		TokenCommand tokenCommand = new TokenCommand();
-		tokenCommand.type = "OpenStackIdentityPlugin";
+		tokenCommand.type = "openstack";
 		tokenCommand.credentials = new HashMap<String, String>();	
 	
 		cli.setIdentityPlugin(identityPlugin);

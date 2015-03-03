@@ -209,6 +209,8 @@ public class Main {
 		} else if (parsedCommand.equals("token")) {
 			if (token.check) {
 				System.out.println(checkToken(token));
+			} else if (token.info) {
+				System.out.println(getTokenInfo(token));
 			} else {
 				System.out.println(createToken(token));							
 			}
@@ -227,7 +229,7 @@ public class Main {
 			doRequest("get", url + "/-/", federationToken, localToken);
 		}
 	}
-	
+
 	private static void configureLog4j() {
 		ConsoleAppender console = new ConsoleAppender();
 		console.setThreshold(Level.OFF);
@@ -256,6 +258,29 @@ public class Main {
 			fileContent += linha + "\n";
 		}
 		return fileContent.trim();
+	}
+	
+	protected static String getTokenInfo(TokenCommand token) {
+		Reflections reflections = new Reflections(
+				ClasspathHelper.forPackage(PLUGIN_PACKAGE), 
+		        new SubTypesScanner());
+		
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
+		for (Class<? extends IdentityPlugin> pluginClass : allClasses) {
+			try {
+				Map<String, String> credentials = token.credentials;			
+				Properties properties = new Properties();
+				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties );
+				Token tokenInfo = identityPlugin.getToken(token.token);
+				return tokenInfo.toString();
+			} catch (Exception e) {
+				// Do Nothing
+			}
+		}
+
+		return "No result.";
 	}
 	
 	protected static String checkToken(TokenCommand token) {
@@ -555,7 +580,7 @@ public class Main {
 		@Parameter(names = "--create", description = "Create token")
 		Boolean create = false;
 
-		@Parameter(names = "--type", description = "Token type", required = true)
+		@Parameter(names = "--type", description = "Token type")
 		String type = null;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
@@ -563,9 +588,12 @@ public class Main {
 		
 		@Parameter(names = "--check", description = "Check token")
 		Boolean check = false;
+				
+		@Parameter(names = "--info", description = "Get Info")
+		Boolean info = false;
 		
 		@Parameter(names = "--token", description = "Token Pure")
-		String token = null;
+		String token = null;			
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
