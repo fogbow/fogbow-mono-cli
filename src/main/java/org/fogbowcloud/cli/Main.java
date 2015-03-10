@@ -41,7 +41,6 @@ import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
-import org.restlet.util.Series;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
@@ -54,7 +53,6 @@ public class Main {
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
 	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
-	protected static final String DEFAULT_FLAVOR = RequestConstants.SMALL_TERM;
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -135,9 +133,11 @@ public class Main {
 						.getValue() + "=" + request.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
 						+ "=" + request.type));
-				headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-						+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+				if (request.flavor != null && !request.flavor.isEmpty()) {
+					headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
+							+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));					
+				}
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
@@ -157,6 +157,14 @@ public class Main {
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
 				}
+				
+				String requirements = request.requirements;
+				if (requirements == null) {
+					jc.usage();
+					return;
+				}
+				headers.add(new BasicHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements"
+						+ "=" + requirements));
 				
 				doRequest("post", url + "/" + RequestConstants.TERM, request.authToken, headers);
 			}
@@ -411,13 +419,16 @@ public class Main {
 		String image = Main.DEFAULT_IMAGE;
 
 		@Parameter(names = "--flavor", description = "Instance flavor")
-		String flavor = Main.DEFAULT_FLAVOR;
+		String flavor = null;
 
 		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
+		
+		@Parameter(names = "--requirements", description = "Requirements")
+		String requirements = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
