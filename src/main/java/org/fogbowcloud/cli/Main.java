@@ -6,6 +6,8 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,12 +38,14 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.ConfigurationConstants;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
+import org.fogbowcloud.manager.core.plugins.accounting.DataStore;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.HeaderUtils;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -79,6 +83,8 @@ public class Main {
 		jc.addCommand("token", token);
 		ResourceCommand resource = new ResourceCommand();
 		jc.addCommand("resource", resource);
+        UsageCommand usage = new UsageCommand();
+        jc.addCommand("usage", usage);
 
 		jc.setProgramName("fogbow-cli");
 		try {
@@ -227,8 +233,53 @@ public class Main {
 			}
 						
 			doRequest("get", url + "/-/", federationToken, localToken);
+		} else if (parsedCommand.equals("usage")) {
+			if (!usage.members && !usage.users) {
+				jc.usage();return;
+			}
+			
+			Class.forName("org.h2.Driver");
+			JdbcConnectionPool cp = JdbcConnectionPool.create(usage.dataStoreUrl, "sa", "");
+            System.out.println(getUsage(usage, cp));
 		}
 	}
+	
+	protected static String getUsage(UsageCommand usage, JdbcConnectionPool cp) {
+		StringBuilder builder = new StringBuilder();
+		try {
+			if (usage.users) {
+				builder.append("\n--------------------------------------------------------\n");
+				builder.append("USER \t\tCONSUMED");
+				String sql = "select * from " + DataStore.USER_TABLE_NAME;
+				ResultSet rs = cp.getConnection().createStatement().executeQuery(sql);
+
+				while (rs.next()) {
+					String userId = rs.getString(DataStore.USER_ID);
+					double consumed = rs.getDouble(DataStore.CONSUMED);
+					builder.append(userId + "\t\t" + consumed);
+				}
+			}
+
+			if (usage.members) {
+				builder.append("\n--------------------------------------------------------\n");
+				builder.append("MEMBER \t\tCONSUMED \t\tDONATED");
+				String sql = "select * from " + DataStore.MEMBER_TABLE_NAME;
+				ResultSet rs = cp.getConnection().createStatement().executeQuery(sql);
+
+				while (rs.next()) {
+					String memberId = rs.getString(DataStore.MEMBER_ID);
+					double consumed = rs.getDouble(DataStore.CONSUMED);
+					double donated = rs.getDouble(DataStore.DONATED);
+					builder.append(memberId + "\t\t" + consumed + "\t\t" + donated);
+				}
+			}
+		} catch (SQLException e) {
+			builder.append("Error while getting usage." + e.getMessage());
+		}
+		builder.append("\n--------------------------------------------------------\n");
+		return builder.toString();
+	}
+
 
 	private static void configureLog4j() {
 		ConsoleAppender console = new ConsoleAppender();
@@ -547,6 +598,18 @@ public class Main {
 		@Parameter(names = "--get", description = "List federation members")
 		Boolean get = true;
 	}
+	
+	@Parameters(separators = "=", commandDescription = "Usage consults")
+	protected static class UsageCommand extends Command {
+		@Parameter(names = "--members", description = "List members' usage")
+		Boolean members = false;
+
+		@Parameter(names = "--users", description = "List users' usage")
+		Boolean users = false;
+
+		@Parameter(names = "--data-store-url", description = "DataStore URL")
+		String dataStoreUrl = null;
+	}
 
 	@Parameters(separators = "=", commandDescription = "Request operations")
 	private static class RequestCommand extends AuthedCommand {
@@ -616,5 +679,5 @@ public class Main {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
-	
+
 }

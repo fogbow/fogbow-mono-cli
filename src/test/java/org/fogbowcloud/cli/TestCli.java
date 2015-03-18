@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
@@ -23,12 +26,15 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
+import org.fogbowcloud.cli.Main.UsageCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
+import org.fogbowcloud.manager.core.plugins.accounting.DataStore;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.HeaderUtils;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +64,7 @@ public class TestCli {
 				HttpStatus.SC_NO_CONTENT, "Return Irrelevant"), null);
 		Mockito.when(client.execute(Mockito.any(HttpUriRequest.class))).thenReturn(response);
 		cli.setClient(client);
+
 	}	
 
 	@SuppressWarnings({ "static-access", "unchecked" })
@@ -368,6 +375,72 @@ public class TestCli {
 		}
 		Assert.assertNull(token);
 	}	
+	
+	@Test
+	public void commandGetMembersUsage() throws Exception {
+		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
+		Connection connection = Mockito.mock(Connection.class);
+		Statement statement = Mockito.mock(Statement.class);		
+		String sql = "select * from " + DataStore.MEMBER_TABLE_NAME;
+		
+		ResultSet resultSet = Mockito.mock(ResultSet.class);
+		Mockito.when(resultSet.next()).thenReturn(false);
+		Mockito.when(statement.executeQuery(sql)).thenReturn(resultSet);
+		Mockito.when(connection.createStatement()).thenReturn(statement);
+		Mockito.when(cp.getConnection()).thenReturn(connection);
+		
+		UsageCommand usage = new UsageCommand();
+		usage.members = true;
+				
+		Main.getUsage(usage, cp);
+
+		Mockito.verify(statement).executeQuery(sql);
+	}
+	
+	@Test
+	public void commandGetUsersUsage() throws Exception {
+		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
+		Connection connection = Mockito.mock(Connection.class);
+		Statement statement = Mockito.mock(Statement.class);		
+		String sql = "select * from " + DataStore.USER_TABLE_NAME;
+		
+		ResultSet resultSet = Mockito.mock(ResultSet.class);
+		Mockito.when(resultSet.next()).thenReturn(false);
+		Mockito.when(statement.executeQuery(sql)).thenReturn(resultSet);
+		Mockito.when(connection.createStatement()).thenReturn(statement);
+		Mockito.when(cp.getConnection()).thenReturn(connection);
+		
+		UsageCommand usage = new UsageCommand();
+		usage.users = true;
+				
+		Main.getUsage(usage, cp);
+
+		Mockito.verify(statement).executeQuery(sql);
+	}
+	
+	@Test
+	public void commandGetMembersAndUsersUsage() throws Exception {
+		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
+		Connection connection = Mockito.mock(Connection.class);
+		Statement statement = Mockito.mock(Statement.class);		
+		String userSql = "select * from " + DataStore.USER_TABLE_NAME;
+		String memberSql = "select * from " + DataStore.MEMBER_TABLE_NAME;
+		
+		ResultSet resultSet = Mockito.mock(ResultSet.class);
+		Mockito.when(resultSet.next()).thenReturn(false);
+		Mockito.when(statement.executeQuery(Mockito.anyString())).thenReturn(resultSet);
+		Mockito.when(connection.createStatement()).thenReturn(statement);
+		Mockito.when(cp.getConnection()).thenReturn(connection);
+		
+		UsageCommand usage = new UsageCommand();
+		usage.users = true;
+		usage.members = true;
+				
+		Main.getUsage(usage, cp);
+
+		Mockito.verify(statement).executeQuery(userSql);
+		Mockito.verify(statement).executeQuery(memberSql);
+	}
 	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
