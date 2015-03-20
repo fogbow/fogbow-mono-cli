@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
@@ -26,15 +23,12 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
-import org.fogbowcloud.cli.Main.UsageCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
-import org.fogbowcloud.manager.core.plugins.accounting.DataStore;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.core.HeaderUtils;
 import org.fogbowcloud.manager.occi.core.OCCIHeaders;
 import org.fogbowcloud.manager.occi.core.Token;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
-import org.h2.jdbcx.JdbcConnectionPool;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -376,70 +370,55 @@ public class TestCli {
 		Assert.assertNull(token);
 	}	
 	
+	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetMembersUsage() throws Exception {
-		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
-		Connection connection = Mockito.mock(Connection.class);
-		Statement statement = Mockito.mock(Statement.class);		
-		String sql = "select * from " + DataStore.MEMBER_TABLE_NAME;
-		
-		ResultSet resultSet = Mockito.mock(ResultSet.class);
-		Mockito.when(resultSet.next()).thenReturn(false);
-		Mockito.when(statement.executeQuery(sql)).thenReturn(resultSet);
-		Mockito.when(connection.createStatement()).thenReturn(statement);
-		Mockito.when(cp.getConnection()).thenReturn(connection);
-		
-		UsageCommand usage = new UsageCommand();
-		usage.members = true;
-				
-		Main.getUsage(usage, cp);
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/members");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
 
-		Mockito.verify(statement).executeQuery(sql);
+		String command = "usage --members --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
 	
+	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetUsersUsage() throws Exception {
-		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
-		Connection connection = Mockito.mock(Connection.class);
-		Statement statement = Mockito.mock(Statement.class);		
-		String sql = "select * from " + DataStore.USER_TABLE_NAME;
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/users");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
 		
-		ResultSet resultSet = Mockito.mock(ResultSet.class);
-		Mockito.when(resultSet.next()).thenReturn(false);
-		Mockito.when(statement.executeQuery(sql)).thenReturn(resultSet);
-		Mockito.when(connection.createStatement()).thenReturn(statement);
-		Mockito.when(cp.getConnection()).thenReturn(connection);
-		
-		UsageCommand usage = new UsageCommand();
-		usage.users = true;
-				
-		Main.getUsage(usage, cp);
+		String command = "usage --users --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
 
-		Mockito.verify(statement).executeQuery(sql);
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
 	
+	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetMembersAndUsersUsage() throws Exception {
-		JdbcConnectionPool cp = Mockito.mock(JdbcConnectionPool.class);
-		Connection connection = Mockito.mock(Connection.class);
-		Statement statement = Mockito.mock(Statement.class);		
-		String userSql = "select * from " + DataStore.USER_TABLE_NAME;
-		String memberSql = "select * from " + DataStore.MEMBER_TABLE_NAME;
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
 		
-		ResultSet resultSet = Mockito.mock(ResultSet.class);
-		Mockito.when(resultSet.next()).thenReturn(false);
-		Mockito.when(statement.executeQuery(Mockito.anyString())).thenReturn(resultSet);
-		Mockito.when(connection.createStatement()).thenReturn(statement);
-		Mockito.when(cp.getConnection()).thenReturn(connection);
-		
-		UsageCommand usage = new UsageCommand();
-		usage.users = true;
-		usage.members = true;
-				
-		Main.getUsage(usage, cp);
+		String command = "usage --users --members --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
 
-		Mockito.verify(statement).executeQuery(userSql);
-		Mockito.verify(statement).executeQuery(memberSql);
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
 	
 	private String[] createArgs(String command) throws Exception {
