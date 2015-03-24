@@ -159,13 +159,16 @@ public class Main {
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
 				}
 				
-				String requirements = Joiner.on(" ").join(request.requirements);
-				if (requirements == null) {
-					jc.usage();
-					return;
+				if (request.requirements != null) {
+					String requirements = Joiner.on(" ").join(request.requirements);
+					if (requirements.isEmpty()) {
+						System.out.println("Requirements empty.");
+						jc.usage();
+						return;
+					}
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.fogbowcloud.request.requirements" + "=" + requirements));
 				}
-				headers.add(new BasicHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements"
-						+ "=" + requirements));
 				
 				doRequest("post", url + "/" + RequestConstants.TERM, request.authToken, headers);
 			}
