@@ -46,6 +46,7 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Joiner;
 
 public class Main {
 
@@ -59,10 +60,10 @@ public class Main {
 	private static IdentityPlugin identityPlugin;
 
 	public static void main(String[] args) throws Exception {
-		configureLog4j();
+		configureLog4j();		
 		
 		JCommander jc = new JCommander();
-
+		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
 		RequestCommand request = new RequestCommand();
@@ -158,7 +159,7 @@ public class Main {
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
 				}
 				
-				String requirements = request.requirements;
+				String requirements = Joiner.on(" ").join(request.requirements);
 				if (requirements == null) {
 					jc.usage();
 					return;
@@ -427,8 +428,8 @@ public class Main {
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
 		
-		@Parameter(names = "--requirements", description = "Requirements")
-		String requirements = null;
+		@Parameter(names = "--requirements", description = "Requirements", variableArity = true)
+		List<String> requirements = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")

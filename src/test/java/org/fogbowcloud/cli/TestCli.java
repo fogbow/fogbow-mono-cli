@@ -92,7 +92,7 @@ public class TestCli {
 		final String intanceCount = "2";
 		final String image = "image";
 		final String flavor = "flavor";
-		final String requirements = "X=1&&Y=2";
+		final String requirements = "X >= 1&&Y=2";
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
