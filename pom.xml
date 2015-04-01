@@ -70,7 +70,7 @@
 			<groupId>org.fogbowcloud</groupId>
 			<artifactId>manager</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
+		</dependency>		
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -81,5 +81,10 @@
 			<artifactId>mockito-all</artifactId>
 			<version>1.8.4</version>
 		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.9</version>
+		</dependency>		
 	</dependencies>
 </project>
