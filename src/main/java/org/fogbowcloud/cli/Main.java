@@ -60,9 +60,16 @@ public class Main {
 	private static IdentityPlugin identityPlugin;
 
 	public static void main(String[] args) throws Exception {
-		configureLog4j();		
+		configureLog4j();
 		
 		JCommander jc = new JCommander();
+		
+		// Normalize args
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].startsWith("\"") && args[i].endsWith("\"")) {
+				args[i] = args[i].replace("\"", "\"\"");
+			}
+		}
 		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
