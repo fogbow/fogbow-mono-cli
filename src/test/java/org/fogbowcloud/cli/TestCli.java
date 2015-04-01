@@ -99,6 +99,39 @@ public class TestCli {
 		final String intanceCount = "2";
 		final String image = "image";
 		final String flavor = "flavor";
+		final String requirements = "X>=1&&Y=2";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", RequestConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("Category", flavor
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
+		request.addHeader("Category", image
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --requirements " + requirements + " --flavor " + flavor;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostRequestWithoutRequirements() throws Exception {
+		final String intanceCount = "2";
+		final String image = "image";
+		final String flavor = "flavor";
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
@@ -116,16 +149,18 @@ public class TestCli {
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + image + " --flavor " + flavor + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID;
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --flavor " + flavor;
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-
+	
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostRequestDefaultValues() throws Exception {
+		String requirements = "X1==&&Y==2";
+		
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", RequestConstants.TERM + "; scheme=\""
@@ -133,9 +168,7 @@ public class TestCli {
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ Main.DEFAULT_INTANCE_COUNT);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("Category", Main.DEFAULT_FLAVOR + "; scheme=\""
-				+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-				+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
 		request.addHeader("Category", Main.DEFAULT_IMAGE + "; scheme=\""
 				+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 				+ RequestConstants.MIXIN_CLASS + "\"");
@@ -144,7 +177,8 @@ public class TestCli {
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --url " + Main.DEFAULT_URL + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID;
+				+ ACCESS_TOKEN_ID + " --requirements " + requirements;
+
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));

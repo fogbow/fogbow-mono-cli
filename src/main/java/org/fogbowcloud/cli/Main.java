@@ -50,6 +50,7 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Joiner;
 
 public class Main {
 
@@ -58,7 +59,6 @@ public class Main {
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
 	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
-	protected static final String DEFAULT_FLAVOR = RequestConstants.SMALL_TERM;
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -68,7 +68,14 @@ public class Main {
 		configureLog4j();
 
 		JCommander jc = new JCommander();
-
+		
+		// Normalize args
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].startsWith("\"") && args[i].endsWith("\"")) {
+				args[i] = args[i].replace("\"", "\"\"");
+			}
+		}
+		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
 		RequestCommand request = new RequestCommand();
@@ -150,9 +157,11 @@ public class Main {
 						.getValue() + "=" + request.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
 						+ "=" + request.type));
-				headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-						+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+				if (request.flavor != null && !request.flavor.isEmpty()) {
+					headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
+							+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));					
+				}
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
@@ -172,7 +181,18 @@ public class Main {
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
 				}
-
+				
+				if (request.requirements != null) {
+					String requirements = Joiner.on(" ").join(request.requirements);
+					if (requirements.isEmpty()) {
+						System.out.println("Requirements empty.");
+						jc.usage();
+						return;
+					}
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.fogbowcloud.request.requirements" + "=" + requirements));
+				}
+				
 				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, localToken,
 						headers);
 			}
@@ -457,7 +477,7 @@ public class Main {
 		if (token == null) {
 			return null;
 		}				
-		return token.replace(Token.BREAK_LINE_REPLACE, "");
+		return token.replace("\n", "");
 	}
 	
 	protected static String normalizeTokenFile(String token) {
@@ -474,7 +494,7 @@ public class Main {
 		} else {
 			return null;
 		}		
-		return token.replace(Token.BREAK_LINE_REPLACE, "");
+		return token.replace("\n", "");
 	}	
 
 	private static void doRequest(String method, String endpoint, String federationToken,
@@ -610,13 +630,16 @@ public class Main {
 		String image = Main.DEFAULT_IMAGE;
 
 		@Parameter(names = "--flavor", description = "Instance flavor")
-		String flavor = Main.DEFAULT_FLAVOR;
+		String flavor = null;
 
 		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
+		
+		@Parameter(names = "--requirements", description = "Requirements", variableArity = true)
+		List<String> requirements = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
