@@ -37,9 +37,9 @@ import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.ConfigurationConstants;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
-import org.fogbowcloud.manager.occi.core.HeaderUtils;
-import org.fogbowcloud.manager.occi.core.OCCIHeaders;
-import org.fogbowcloud.manager.occi.core.Token;
+import org.fogbowcloud.manager.occi.model.HeaderUtils;
+import org.fogbowcloud.manager.occi.model.OCCIHeaders;
+import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
@@ -55,7 +55,7 @@ import com.google.common.base.Joiner;
 public class Main {
 
 	protected static final String LOCAL_TOKEN_HEADER = "local_token";
-	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins";
+	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins.identity";
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
 	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
