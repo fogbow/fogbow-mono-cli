@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
@@ -34,7 +35,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.fogbowcloud.manager.core.ConfigurationConstants;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
@@ -334,7 +334,9 @@ public class Main {
 			if (identityPlugin == null) {
 				Map<String, String> credentials = token.credentials;			
 				Properties properties = new Properties();
-				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				for (Entry<String, String> credEntry : credentials.entrySet()) {
+					properties.put(credEntry.getKey(), credEntry.getValue());
+				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
 				try {
 					Token tokenInfo = identityPlugin.getToken(token.token);
@@ -372,7 +374,9 @@ public class Main {
 			if (identityPlugin == null) {
 				Map<String, String> credentials = token.credentials;			
 				Properties properties = new Properties();
-				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				for (Entry<String, String> credEntry : credentials.entrySet()) {
+					properties.put(credEntry.getKey(), credEntry.getValue());
+				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
 			}
 		} catch (Exception e) {
