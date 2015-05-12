@@ -28,6 +28,7 @@ import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
+import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.junit.Assert;
 import org.junit.Before;
@@ -125,6 +126,47 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostRequestWithDataUser() throws Exception {
+		final String intanceCount = "2";
+		final String image = "image";
+		final String flavor = "flavor";
+		final String requirements = "X>=1&&Y=2";
+		String userDataPath = "src/test/resource/get_content";
+		String userDataContent = "";
+		File file = new File(userDataPath);
+		userDataContent = IOUtils.toString(new FileInputStream(file));
+		String type = "Maaarcos";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", RequestConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userDataContent);
+		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);		
+		request.addHeader("Category", flavor
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
+		request.addHeader("Category", image
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --requirements " + requirements + " --flavor " + flavor + " --user-data-file " + userDataPath
+				+ " --user-data-file-content-type " + type;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}	
 	
 	@SuppressWarnings("static-access")
 	@Test
