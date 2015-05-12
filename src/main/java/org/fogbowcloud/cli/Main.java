@@ -35,6 +35,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.fogbowcloud.manager.core.UserdataUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
@@ -165,6 +166,27 @@ public class Main {
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
+				
+				if (request.userDataFile != null && !request.userDataFile.isEmpty()) {
+					if (request.userDataFileContentType == null 
+							|| request.userDataFileContentType.isEmpty()) {
+						System.out.println("Content type of user data file cannot be empty.");
+						return;
+					}
+					try {
+						String userDataContent = getFileContent(request.userDataFile);
+						String userData = userDataContent.replaceAll("\n", 
+								UserdataUtils.USER_DATA_LINE_BREAKER);
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
+								+ "=" + request.userDataFileContentType));
+					} catch (IOException e) {
+						System.out.println("User data file not found.");
+						return;
+					}
+				}
 
 				if (request.publicKey != null && !request.publicKey.isEmpty()) {
 
@@ -644,6 +666,12 @@ public class Main {
 		
 		@Parameter(names = "--requirements", description = "Requirements", variableArity = true)
 		List<String> requirements = null;
+		
+		@Parameter(names = "--user-data-file", description = "User data file for cloud init")
+		String userDataFile = null;
+		
+		@Parameter(names = "--user-data-file-content-type", description = "Content type of user data file for cloud init")
+		String userDataFileContentType = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
