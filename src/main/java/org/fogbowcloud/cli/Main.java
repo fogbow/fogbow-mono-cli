@@ -175,7 +175,7 @@ public class Main {
 					}
 					try {
 						String userDataContent = getFileContent(request.userDataFile);
-						String userData = userDataContent.replaceAll("\n", 
+						String userData = userDataContent.replace("\n", 
 								UserdataUtils.USER_DATA_LINE_BREAKER);
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
 								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
