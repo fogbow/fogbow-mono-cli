@@ -545,10 +545,6 @@ public class Main {
 		}
 		if (localToken != null) {
 			request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localToken);
-		} else {
-			if (federationToken != null) {
-				request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, federationToken);			
-			}
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
