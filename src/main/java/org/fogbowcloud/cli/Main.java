@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -175,8 +176,9 @@ public class Main {
 					}
 					try {
 						String userDataContent = getFileContent(request.userDataFile);
-						String userData = userDataContent.replace("\n", 
+						String userData = userDataContent.replace("\n",
 								UserdataUtils.USER_DATA_LINE_BREAKER);
+						userData = new String(Base64.encodeBase64(userData.getBytes()));
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
 								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
 						headers.add(new BasicHeader("X-OCCI-Attribute", 

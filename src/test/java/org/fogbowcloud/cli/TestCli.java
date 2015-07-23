@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -146,7 +147,8 @@ public class TestCli {
 				+ intanceCount);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
-		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userDataContent);
+		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "="
+				+ new String(Base64.encodeBase64(userDataContent.getBytes())));
 		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);		
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
