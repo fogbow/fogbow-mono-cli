@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -25,9 +26,10 @@ import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
-import org.fogbowcloud.manager.occi.core.HeaderUtils;
-import org.fogbowcloud.manager.occi.core.OCCIHeaders;
-import org.fogbowcloud.manager.occi.core.Token;
+import org.fogbowcloud.manager.occi.model.HeaderUtils;
+import org.fogbowcloud.manager.occi.model.OCCIHeaders;
+import org.fogbowcloud.manager.occi.model.Token;
+import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +60,7 @@ public class TestCli {
 				HttpStatus.SC_NO_CONTENT, "Return Irrelevant"), null);
 		Mockito.when(client.execute(Mockito.any(HttpUriRequest.class))).thenReturn(response);
 		cli.setClient(client);
+
 	}	
 
 	@SuppressWarnings({ "static-access", "unchecked" })
@@ -75,14 +78,13 @@ public class TestCli {
 		cli.setIdentityPlugin(identityPlugin);
 		Assert.assertEquals(accessId, cli.createToken(tokenCommand));
 	}
-
+	
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandWithoutUrl() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/compute/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --get --federation-auth-token "
@@ -95,6 +97,79 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostRequest() throws Exception {
+		final String intanceCount = "2";
+		final String image = "image";
+		final String flavor = "flavor";
+		final String requirements = "X>=1&&Y=2";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", RequestConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("Category", flavor
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
+		request.addHeader("Category", image
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --requirements " + requirements + " --flavor " + flavor;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostRequestWithDataUser() throws Exception {
+		final String intanceCount = "2";
+		final String image = "image";
+		final String flavor = "flavor";
+		final String requirements = "X>=1&&Y=2";
+		String userDataPath = "src/test/resource/get_content";
+		String userDataContent = "";
+		File file = new File(userDataPath);
+		userDataContent = IOUtils.toString(new FileInputStream(file));
+		String type = "Maaarcos";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", RequestConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "="
+				+ new String(Base64.encodeBase64(userDataContent.getBytes())));
+		request.addHeader("X-OCCI-Attribute", RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);		
+		request.addHeader("Category", flavor
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
+		request.addHeader("Category", image
+				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --requirements " + requirements + " --flavor " + flavor + " --user-data-file " + userDataPath
+				+ " --user-data-file-content-type " + type;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}	
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostRequestWithoutRequirements() throws Exception {
 		final String intanceCount = "2";
 		final String image = "image";
 		final String flavor = "flavor";
@@ -111,20 +186,21 @@ public class TestCli {
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + image + " --flavor " + flavor + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID;
+				+ " " + "--image " + image + " --federation-auth-token " + ACCESS_TOKEN_ID
+				+ " --flavor " + flavor;
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-
+	
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostRequestDefaultValues() throws Exception {
+		String requirements = "X1==&&Y==2";
+		
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", RequestConstants.TERM + "; scheme=\""
@@ -132,18 +208,16 @@ public class TestCli {
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ Main.DEFAULT_INTANCE_COUNT);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("Category", Main.DEFAULT_FLAVOR + "; scheme=\""
-				+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-				+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
 		request.addHeader("Category", Main.DEFAULT_IMAGE + "; scheme=\""
 				+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 				+ RequestConstants.MIXIN_CLASS + "\"");
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --create --url " + Main.DEFAULT_URL + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID;
+				+ ACCESS_TOKEN_ID + " --requirements " + requirements;
+
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
@@ -157,7 +231,6 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --get --url " + Main.DEFAULT_URL + " --federation-auth-token "
@@ -174,7 +247,6 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --get --url " + Main.DEFAULT_URL + " --federation-auth-token "
@@ -192,7 +264,7 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(Main.LOCAL_TOKEN_HEADER, ACCESS_TOKEN_ID);
+//		request.addHeader(Main.LOCAL_TOKEN_HEADER, ACCESS_TOKEN_ID);
 		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localAccessId);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
@@ -211,7 +283,6 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "request --delete --url " + Main.DEFAULT_URL + " --federation-auth-token "
@@ -253,7 +324,6 @@ public class TestCli {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/compute/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --get --url " + Main.DEFAULT_URL + " " + " --federation-auth-token "
@@ -269,7 +339,6 @@ public class TestCli {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/compute/" + INSTANCE_ID);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --get --url " + Main.DEFAULT_URL + " " + "--id " + INSTANCE_ID
@@ -285,7 +354,6 @@ public class TestCli {
 		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/compute/" + INSTANCE_ID);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "instance --delete --url " + Main.DEFAULT_URL + " " + "--id "
@@ -311,13 +379,13 @@ public class TestCli {
 			IdentityPlugin identityPlugin = null;
 			try {
 				identityPlugin = (IdentityPlugin) cli.createInstance(eachClass, new Properties());
-			} catch (Exception e) {
-			}
-			for (Credential credential : identityPlugin.getCredentials()) {
-				Assert.assertTrue(response.contains(credential.getName()));
-				if (credential.getValueDefault() != null) {
-					Assert.assertTrue(response.contains(credential.getValueDefault()));
+				for (Credential credential : identityPlugin.getCredentials()) {
+					Assert.assertTrue(response.contains(credential.getName()));
+					if (credential.getValueDefault() != null) {
+						Assert.assertTrue(response.contains(credential.getValueDefault()));
+					}
 				}
+			} catch (Exception e) {
 			}
 		}
 
@@ -369,6 +437,54 @@ public class TestCli {
 		Assert.assertNull(token);
 	}	
 	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetMembersUsage() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/members");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "usage --members --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetUsersUsage() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/users");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "usage --users --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetMembersAndUsersUsage() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "usage --users --members --url " + Main.DEFAULT_URL
+				+ " --federation-auth-token " + ACCESS_TOKEN_ID;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
 	}
@@ -399,6 +515,12 @@ public class TestCli {
 			for (Header comparedHeader : comparedHeaders) {
 				boolean headerEquals = false;
 				for (Header header : this.request.getAllHeaders()) {
+					if (header.getName().equals(OCCIHeaders.X_LOCAL_AUTH_TOKEN)) {
+						if (header.getName().equals(comparedHeader.getName())) {
+							headerEquals = true;
+							break;
+						}
+					}
 					if (header.getName().equals(comparedHeader.getName())
 							&& header.getValue().equals(comparedHeader.getValue())) {
 						headerEquals = true;

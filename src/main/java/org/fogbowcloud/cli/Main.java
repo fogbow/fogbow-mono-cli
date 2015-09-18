@@ -10,9 +10,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -34,12 +36,12 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.fogbowcloud.manager.core.ConfigurationConstants;
+import org.fogbowcloud.manager.core.UserdataUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
-import org.fogbowcloud.manager.occi.core.HeaderUtils;
-import org.fogbowcloud.manager.occi.core.OCCIHeaders;
-import org.fogbowcloud.manager.occi.core.Token;
+import org.fogbowcloud.manager.occi.model.HeaderUtils;
+import org.fogbowcloud.manager.occi.model.OCCIHeaders;
+import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.request.RequestAttribute;
 import org.fogbowcloud.manager.occi.request.RequestConstants;
 import org.reflections.Reflections;
@@ -50,15 +52,15 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Joiner;
 
 public class Main {
 
 	protected static final String LOCAL_TOKEN_HEADER = "local_token";
-	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins";
+	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins.identity";
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
 	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
-	protected static final String DEFAULT_FLAVOR = RequestConstants.SMALL_TERM;
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -68,7 +70,14 @@ public class Main {
 		configureLog4j();
 
 		JCommander jc = new JCommander();
-
+		
+		// Normalize args
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].startsWith("\"") && args[i].endsWith("\"")) {
+				args[i] = args[i].replace("\"", "\"\"");
+			}
+		}
+		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
 		RequestCommand request = new RequestCommand();
@@ -79,6 +88,8 @@ public class Main {
 		jc.addCommand("token", token);
 		ResourceCommand resource = new ResourceCommand();
 		jc.addCommand("resource", resource);
+        UsageCommand usage = new UsageCommand();
+        jc.addCommand("usage", usage);
 
 		jc.setProgramName("fogbow-cli");
 		try {
@@ -148,12 +159,36 @@ public class Main {
 						.getValue() + "=" + request.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
 						+ "=" + request.type));
-				headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-						+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+				if (request.flavor != null && !request.flavor.isEmpty()) {
+					headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
+							+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));					
+				}
 				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
 						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 						+ RequestConstants.MIXIN_CLASS + "\""));
+				
+				if (request.userDataFile != null && !request.userDataFile.isEmpty()) {
+					if (request.userDataFileContentType == null 
+							|| request.userDataFileContentType.isEmpty()) {
+						System.out.println("Content type of user data file cannot be empty.");
+						return;
+					}
+					try {
+						String userDataContent = getFileContent(request.userDataFile);
+						String userData = userDataContent.replace("\n",
+								UserdataUtils.USER_DATA_LINE_BREAKER);
+						userData = new String(Base64.encodeBase64(userData.getBytes()));
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
+								+ "=" + request.userDataFileContentType));
+					} catch (IOException e) {
+						System.out.println("User data file not found.");
+						return;
+					}
+				}
 
 				if (request.publicKey != null && !request.publicKey.isEmpty()) {
 
@@ -170,7 +205,18 @@ public class Main {
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
 				}
-
+				
+				if (request.requirements != null) {
+					String requirements = Joiner.on(" ").join(request.requirements);
+					if (requirements.isEmpty()) {
+						System.out.println("Requirements empty.");
+						jc.usage();
+						return;
+					}
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.fogbowcloud.request.requirements" + "=" + requirements));
+				}
+				
 				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, localToken,
 						headers);
 			}
@@ -227,9 +273,39 @@ public class Main {
 			}
 						
 			doRequest("get", url + "/-/", federationToken, localToken);
+		} else if (parsedCommand.equals("usage")) {
+			String url = usage.url;
+			
+			String federationToken = normalizeTokenFile(usage.federationAuthFile);
+			if (federationToken == null) {
+				federationToken = normalizeToken(usage.federationAuthToken);
+			}
+			String localToken = normalizeTokenFile(usage.localAuthFile);
+			if (localToken == null) {
+				localToken = normalizeToken(usage.localAuthToken);
+			}
+			
+			if (!usage.members && !usage.users) {
+				jc.usage();
+				return;
+			}
+			
+			if (usage.members && usage.users) {
+				doRequest("get", url + "/usage", federationToken,
+						localToken);
+			} else if (usage.members) {
+				doRequest("get", url + "/usage/members", federationToken,
+						localToken);
+			} else if (usage.users) {
+				doRequest("get", url + "/usage/users", federationToken,
+						localToken);
+			} else {
+				jc.usage();
+				return;
+			}
 		}
 	}
-
+	
 	private static void configureLog4j() {
 		ConsoleAppender console = new ConsoleAppender();
 		console.setThreshold(Level.OFF);
@@ -282,7 +358,9 @@ public class Main {
 			if (identityPlugin == null) {
 				Map<String, String> credentials = token.credentials;			
 				Properties properties = new Properties();
-				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				for (Entry<String, String> credEntry : credentials.entrySet()) {
+					properties.put(credEntry.getKey(), credEntry.getValue());
+				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
 				try {
 					Token tokenInfo = identityPlugin.getToken(token.token);
@@ -320,7 +398,9 @@ public class Main {
 			if (identityPlugin == null) {
 				Map<String, String> credentials = token.credentials;			
 				Properties properties = new Properties();
-				properties.put(ConfigurationConstants.IDENTITY_URL, credentials.get("authUrl"));
+				for (Entry<String, String> credEntry : credentials.entrySet()) {
+					properties.put(credEntry.getKey(), credEntry.getValue());
+				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
 			}
 		} catch (Exception e) {
@@ -384,6 +464,7 @@ public class Main {
 		response.append("Credentials :\n");
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] identityPluginFullName = eachClass.getName().split("\\.");
+			System.out.println(eachClass.getName());
 			IdentityPlugin identityPlugin = null;
 			try {
 				identityPlugin = (IdentityPlugin) createInstance(eachClass, new Properties());
@@ -425,7 +506,7 @@ public class Main {
 		if (token == null) {
 			return null;
 		}				
-		return token.replace(Token.BREAK_LINE_REPLACE, "");
+		return token.replace("\n", "");
 	}
 	
 	protected static String normalizeTokenFile(String token) {
@@ -442,7 +523,7 @@ public class Main {
 		} else {
 			return null;
 		}		
-		return token.replace(Token.BREAK_LINE_REPLACE, "");
+		return token.replace("\n", "");
 	}	
 
 	private static void doRequest(String method, String endpoint, String federationToken,
@@ -467,10 +548,6 @@ public class Main {
 		}
 		if (localToken != null) {
 			request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localToken);
-		} else {
-			if (federationToken != null) {
-				request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, federationToken);			
-			}
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
@@ -547,6 +624,15 @@ public class Main {
 		@Parameter(names = "--get", description = "List federation members")
 		Boolean get = true;
 	}
+	
+	@Parameters(separators = "=", commandDescription = "Usage consults")
+	private static class UsageCommand extends AuthedCommand {
+		@Parameter(names = "--members", description = "List members' usage")
+		Boolean members = false;
+
+		@Parameter(names = "--users", description = "List users' usage")
+		Boolean users = false;
+	}
 
 	@Parameters(separators = "=", commandDescription = "Request operations")
 	private static class RequestCommand extends AuthedCommand {
@@ -569,13 +655,22 @@ public class Main {
 		String image = Main.DEFAULT_IMAGE;
 
 		@Parameter(names = "--flavor", description = "Instance flavor")
-		String flavor = Main.DEFAULT_FLAVOR;
+		String flavor = null;
 
 		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
+		
+		@Parameter(names = "--requirements", description = "Requirements", variableArity = true)
+		List<String> requirements = null;
+		
+		@Parameter(names = "--user-data-file", description = "User data file for cloud init")
+		String userDataFile = null;
+		
+		@Parameter(names = "--user-data-file-content-type", description = "Content type of user data file for cloud init")
+		String userDataFileContentType = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
@@ -616,5 +711,5 @@ public class Main {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
 	}
-	
+
 }
