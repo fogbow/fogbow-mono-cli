@@ -379,13 +379,13 @@ public class TestCli {
 			IdentityPlugin identityPlugin = null;
 			try {
 				identityPlugin = (IdentityPlugin) cli.createInstance(eachClass, new Properties());
-			} catch (Exception e) {
-			}
-			for (Credential credential : identityPlugin.getCredentials()) {
-				Assert.assertTrue(response.contains(credential.getName()));
-				if (credential.getValueDefault() != null) {
-					Assert.assertTrue(response.contains(credential.getValueDefault()));
+				for (Credential credential : identityPlugin.getCredentials()) {
+					Assert.assertTrue(response.contains(credential.getName()));
+					if (credential.getValueDefault() != null) {
+						Assert.assertTrue(response.contains(credential.getValueDefault()));
+					}
 				}
+			} catch (Exception e) {
 			}
 		}
 

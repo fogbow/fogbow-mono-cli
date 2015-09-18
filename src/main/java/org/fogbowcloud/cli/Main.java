@@ -464,6 +464,7 @@ public class Main {
 		response.append("Credentials :\n");
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] identityPluginFullName = eachClass.getName().split("\\.");
+			System.out.println(eachClass.getName());
 			IdentityPlugin identityPlugin = null;
 			try {
 				identityPlugin = (IdentityPlugin) createInstance(eachClass, new Properties());
