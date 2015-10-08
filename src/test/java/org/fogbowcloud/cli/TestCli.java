@@ -496,7 +496,7 @@ public class TestCli {
 			for (Header comparedHeader : comparedHeaders) {
 				boolean headerEquals = false;
 				for (Header header : this.request.getAllHeaders()) {
-					if (header.getName().equals(OCCIHeaders.X_LOCAL_AUTH_TOKEN)) {
+					if (header.getName().equals(OCCIHeaders.X_FEDERATION_AUTH_TOKEN)) {
 						if (header.getName().equals(comparedHeader.getName())) {
 							headerEquals = true;
 							break;
