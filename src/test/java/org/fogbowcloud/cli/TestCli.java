@@ -255,25 +255,6 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
-	@SuppressWarnings("static-access")
-	@Test
-	public void commandGetRequestWithLocalToken() throws Exception {
-		String localAccessId = "local_access_id";
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-
-		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-//		request.addHeader(Main.LOCAL_TOKEN_HEADER, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localAccessId);
-		expectedRequest = new HttpUriRequestMatcher(request);
-
-		String command = "request --get --url " + Main.DEFAULT_URL + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID + " --local-auth-token " + localAccessId;
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
 
 	@SuppressWarnings("static-access")
 	@Test
@@ -515,7 +496,7 @@ public class TestCli {
 			for (Header comparedHeader : comparedHeaders) {
 				boolean headerEquals = false;
 				for (Header header : this.request.getAllHeaders()) {
-					if (header.getName().equals(OCCIHeaders.X_LOCAL_AUTH_TOKEN)) {
+					if (header.getName().equals(OCCIHeaders.X_FEDERATION_AUTH_TOKEN)) {
 						if (header.getName().equals(comparedHeader.getName())) {
 							headerEquals = true;
 							break;
