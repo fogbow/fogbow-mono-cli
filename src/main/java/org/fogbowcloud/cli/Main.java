@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -239,6 +240,81 @@ public class Main {
 				}
 
 				doRequest("delete", url + "/compute/" + instance.instanceId, federationToken);
+			} else if (instance.create) {
+				if (instance.delete || instance.get || instance.instanceId != null) {
+					jc.usage();
+					return;
+				}
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
+						+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+						+ "\""));
+								
+				// flavor
+				if (instance.flavor != null && !instance.flavor.isEmpty()) {
+					OCCIElement occiFlavorEl = OCCIElement.createOCCIEl(instance.flavor);
+					if (occiFlavorEl == null) {
+						jc.usage();
+						return;
+					}
+					
+					headers.add(new BasicHeader("Category", occiFlavorEl.getTerm() + "; scheme=\""
+							+ occiFlavorEl.getScheme() + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));					
+				}
+				
+				// image
+				OCCIElement occiImageEl = OCCIElement.createOCCIEl(instance.image);
+				if (occiImageEl == null) {
+					jc.usage();
+					return;
+				}
+				
+				headers.add(new BasicHeader("Category", occiImageEl.getTerm() + "; scheme=\""
+						+ occiImageEl.getScheme() + "\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\""));
+				
+				// userdata
+				if (instance.userDataFile != null && !instance.userDataFile.isEmpty()) {
+					try {
+						String userDataContent = getFileContent(instance.userDataFile);
+						String userData = userDataContent.replace("\n",
+								UserdataUtils.USER_DATA_LINE_BREAKER);
+						userData = new String(Base64.encodeBase64(userData.getBytes()));
+						
+						headers.add(new BasicHeader("Category", "user_data" + "; scheme=\""
+								+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
+								+ RequestConstants.MIXIN_CLASS + "\""));
+							
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								"org.openstack.compute.user_data=" + userData));						
+					} catch (IOException e) {
+						System.out.println("User data file not found.");
+						return;
+					}
+				}
+
+				// publickey
+				if (instance.publicKey != null && !instance.publicKey.isEmpty()) {
+
+					try {
+						instance.publicKey = getFileContent(instance.publicKey);
+					} catch (IOException e) {
+						System.out.println("Public key file not found.");
+						return;
+					}
+					
+					headers.add(new BasicHeader("Category", "public_key" + "; scheme=\""
+							+ "http://schemas.openstack.org/instance/credentials#" + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));
+
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.openstack.credentials.publickey.data=" + request.publicKey));
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.openstack.credentials.publickey.name=fogbow"));
+				}
+				doRequest("post", url + "/compute/", federationToken, headers);
 			}
 		} else if (parsedCommand.equals("token")) {
 			if (token.check) {
@@ -646,9 +722,24 @@ public class Main {
 
 		@Parameter(names = "--delete", description = "Delete instance")
 		Boolean delete = false;
+		
+		@Parameter(names = "--create", description = "Create instance directly")
+		Boolean create = false;
 
 		@Parameter(names = "--id", description = "Instance id")
 		String instanceId = null;
+		
+		@Parameter(names = "--flavor", description = "Instance flavor")
+		String flavor = null;
+		
+		@Parameter(names = "--image", description = "Instance image")
+		String image = null;
+		
+		@Parameter(names = "--user-data-file", description = "User data file for cloud init")
+		String userDataFile = null;
+		
+		@Parameter(names = "--public-key", description = "Public key")
+		String publicKey = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
@@ -676,6 +767,30 @@ public class Main {
 	private static class ResourceCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
+	}
+	
+	private static class OCCIElement {
+
+		private String term;
+		private String scheme;
+		
+		private OCCIElement(String scheme, String term) {
+			this.term = term;
+			this.scheme = scheme;
+		}
+		
+		public static OCCIElement createOCCIEl(String occiElStr) {
+			int hashIndex = occiElStr.indexOf('#');
+			return new OCCIElement(occiElStr.substring(0, hashIndex + 1), occiElStr.substring(hashIndex + 1));
+		}
+
+		public String getScheme() {
+			return this.scheme;
+		}
+
+		public String getTerm() {
+			return this.term;
+		}
 	}
 
 }
