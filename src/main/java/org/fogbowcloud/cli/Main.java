@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -310,7 +309,7 @@ public class Main {
 							+ RequestConstants.MIXIN_CLASS + "\""));
 
 					headers.add(new BasicHeader("X-OCCI-Attribute",
-							"org.openstack.credentials.publickey.data=" + request.publicKey));
+							"org.openstack.credentials.publickey.data=" + instance.publicKey));
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.name=fogbow"));
 				}
