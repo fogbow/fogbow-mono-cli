@@ -255,25 +255,6 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
-	@SuppressWarnings("static-access")
-	@Test
-	public void commandGetRequestWithLocalToken() throws Exception {
-		String localAccessId = "local_access_id";
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + RequestConstants.TERM);
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-
-		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
-//		request.addHeader(Main.LOCAL_TOKEN_HEADER, ACCESS_TOKEN_ID);
-		request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localAccessId);
-		expectedRequest = new HttpUriRequestMatcher(request);
-
-		String command = "request --get --url " + Main.DEFAULT_URL + " --federation-auth-token "
-				+ ACCESS_TOKEN_ID + " --local-auth-token " + localAccessId;
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
 
 	@SuppressWarnings("static-access")
 	@Test
@@ -318,6 +299,73 @@ public class TestCli {
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
 
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandCreateInstance() throws Exception {
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/compute/");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
+				+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+				+ RequestConstants.KIND_CLASS + "\"");
+		request.addHeader("Category",
+				"large; scheme=\"http://schemas.openstack.org/template/resource#\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("Category",
+				"imageName; scheme=\"http://schemas.openstack.org/template/os#\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\"");
+		
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String flavorId = "http://schemas.openstack.org/template/resource#large";		
+		String imageId = "http://schemas.openstack.org/template/os#imageName";
+		
+		String command = "instance --create --url " + Main.DEFAULT_URL + " " + " --federation-auth-token "
+				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " +  flavorId;
+		
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandCreateInstanceWithUserData() throws Exception {
+		String userDataPath = "src/test/resource/get_content";
+		String userDataContent = "";
+		File file = new File(userDataPath);
+		userDataContent = IOUtils.toString(new FileInputStream(file));
+		
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/compute/");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
+				+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+				+ RequestConstants.KIND_CLASS + "\"");
+		request.addHeader("Category",
+				"large; scheme=\"http://schemas.openstack.org/template/resource#\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("Category",
+				"imageName; scheme=\"http://schemas.openstack.org/template/os#\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("Category", "user_data" + "; scheme=\""
+				+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
+				+ RequestConstants.MIXIN_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute", "org.openstack.compute.user_data=" + new String(Base64.encodeBase64(userDataContent.getBytes())));
+				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String flavorId = "http://schemas.openstack.org/template/resource#large";		
+		String imageId = "http://schemas.openstack.org/template/os#imageName";
+		
+		String command = "instance --create --url " + Main.DEFAULT_URL + " " + " --federation-auth-token "
+				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " +  flavorId + " --user-data-file " + userDataPath;
+		
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetInstance() throws Exception {
@@ -515,7 +563,7 @@ public class TestCli {
 			for (Header comparedHeader : comparedHeaders) {
 				boolean headerEquals = false;
 				for (Header header : this.request.getAllHeaders()) {
-					if (header.getName().equals(OCCIHeaders.X_LOCAL_AUTH_TOKEN)) {
+					if (header.getName().equals(OCCIHeaders.X_FEDERATION_AUTH_TOKEN)) {
 						if (header.getName().equals(comparedHeader.getName())) {
 							headerEquals = true;
 							break;

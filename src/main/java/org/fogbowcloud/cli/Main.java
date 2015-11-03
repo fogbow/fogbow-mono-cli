@@ -54,6 +54,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.base.Joiner;
 
+@SuppressWarnings("deprecation")
 public class Main {
 
 	protected static final String LOCAL_TOKEN_HEADER = "local_token";
@@ -109,17 +110,13 @@ public class Main {
 
 		if (parsedCommand.equals("member")) {
 			String url = member.url;
-			doRequest("get", url + "/members", null, null);
+			doRequest("get", url + "/members", null);
 		} else if (parsedCommand.equals("request")) {
 			String url = request.url;
 			
 			String federationToken = normalizeTokenFile(request.federationAuthFile);
 			if (federationToken == null) {
 				federationToken = normalizeToken(request.federationAuthToken);
-			}
-			String localToken = normalizeTokenFile(request.localAuthFile);
-			if (localToken == null) {
-				localToken = normalizeToken(request.localAuthToken);
 			}
 			
 			if (request.get) {
@@ -128,18 +125,16 @@ public class Main {
 					return;
 				}
 				if (request.requestId != null) {
-					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId,
-							federationToken, localToken);
+					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
 				} else {
-					doRequest("get", url + "/" + RequestConstants.TERM, federationToken, localToken);
+					doRequest("get", url + "/" + RequestConstants.TERM, federationToken);
 				}
 			} else if (request.delete) {
 				if (request.create || request.get || request.requestId == null) {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId,
-						federationToken, localToken);
+				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
 			} else if (request.create) {
 				if (request.delete || request.get || request.requestId != null) {
 					jc.usage();
@@ -217,8 +212,7 @@ public class Main {
 							"org.fogbowcloud.request.requirements" + "=" + requirements));
 				}
 				
-				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, localToken,
-						headers);
+				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
 			String url = instance.url;
@@ -227,10 +221,6 @@ public class Main {
 			if (federationToken == null) {
 				federationToken = normalizeToken(instance.federationAuthToken);
 			}
-			String localToken = normalizeTokenFile(instance.localAuthFile);
-			if (localToken == null) {
-				localToken = normalizeToken(instance.localAuthToken);
-			}
 			
 			if (instance.delete && instance.get) {
 				jc.usage();
@@ -238,10 +228,9 @@ public class Main {
 			}
 			if (instance.get) {
 				if (instance.instanceId != null) {
-					doRequest("get", url + "/compute/" + instance.instanceId, federationToken,
-							localToken);
+					doRequest("get", url + "/compute/" + instance.instanceId, federationToken);
 				} else {
-					doRequest("get", url + "/compute/", federationToken, localToken);
+					doRequest("get", url + "/compute/", federationToken);
 				}
 			} else if (instance.delete) {
 				if (instance.instanceId == null) {
@@ -249,8 +238,82 @@ public class Main {
 					return;
 				}
 
-				doRequest("delete", url + "/compute/" + instance.instanceId, federationToken,
-						localToken);
+				doRequest("delete", url + "/compute/" + instance.instanceId, federationToken);
+			} else if (instance.create) {
+				if (instance.delete || instance.get || instance.instanceId != null) {
+					jc.usage();
+					return;
+				}
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
+						+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+						+ "\""));
+								
+				// flavor
+				if (instance.flavor != null && !instance.flavor.isEmpty()) {
+					OCCIElement occiFlavorEl = OCCIElement.createOCCIEl(instance.flavor);
+					if (occiFlavorEl == null) {
+						jc.usage();
+						return;
+					}
+					
+					headers.add(new BasicHeader("Category", occiFlavorEl.getTerm() + "; scheme=\""
+							+ occiFlavorEl.getScheme() + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));					
+				}
+				
+				// image
+				OCCIElement occiImageEl = OCCIElement.createOCCIEl(instance.image);
+				if (occiImageEl == null) {
+					jc.usage();
+					return;
+				}
+				
+				headers.add(new BasicHeader("Category", occiImageEl.getTerm() + "; scheme=\""
+						+ occiImageEl.getScheme() + "\"; class=\""
+						+ RequestConstants.MIXIN_CLASS + "\""));
+				
+				// userdata
+				if (instance.userDataFile != null && !instance.userDataFile.isEmpty()) {
+					try {
+						String userDataContent = getFileContent(instance.userDataFile);
+						String userData = userDataContent.replace("\n",
+								UserdataUtils.USER_DATA_LINE_BREAKER);
+						userData = new String(Base64.encodeBase64(userData.getBytes()));
+						
+						headers.add(new BasicHeader("Category", "user_data" + "; scheme=\""
+								+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
+								+ RequestConstants.MIXIN_CLASS + "\""));
+							
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								"org.openstack.compute.user_data=" + userData));						
+					} catch (IOException e) {
+						System.out.println("User data file not found.");
+						return;
+					}
+				}
+
+				// publickey
+				if (instance.publicKey != null && !instance.publicKey.isEmpty()) {
+
+					try {
+						instance.publicKey = getFileContent(instance.publicKey);
+					} catch (IOException e) {
+						System.out.println("Public key file not found.");
+						return;
+					}
+					
+					headers.add(new BasicHeader("Category", "public_key" + "; scheme=\""
+							+ "http://schemas.openstack.org/instance/credentials#" + "\"; class=\""
+							+ RequestConstants.MIXIN_CLASS + "\""));
+
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.openstack.credentials.publickey.data=" + instance.publicKey));
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.openstack.credentials.publickey.name=fogbow"));
+				}
+				doRequest("post", url + "/compute/", federationToken, headers);
 			}
 		} else if (parsedCommand.equals("token")) {
 			if (token.check) {
@@ -267,22 +330,14 @@ public class Main {
 			if (federationToken == null) {
 				federationToken = normalizeToken(resource.federationAuthToken);
 			}
-			String localToken = normalizeTokenFile(resource.localAuthFile);
-			if (localToken == null) {
-				localToken = normalizeToken(resource.localAuthToken);
-			}
 						
-			doRequest("get", url + "/-/", federationToken, localToken);
+			doRequest("get", url + "/-/", federationToken);
 		} else if (parsedCommand.equals("usage")) {
 			String url = usage.url;
 			
 			String federationToken = normalizeTokenFile(usage.federationAuthFile);
 			if (federationToken == null) {
 				federationToken = normalizeToken(usage.federationAuthToken);
-			}
-			String localToken = normalizeTokenFile(usage.localAuthFile);
-			if (localToken == null) {
-				localToken = normalizeToken(usage.localAuthToken);
 			}
 			
 			if (!usage.members && !usage.users) {
@@ -291,14 +346,11 @@ public class Main {
 			}
 			
 			if (usage.members && usage.users) {
-				doRequest("get", url + "/usage", federationToken,
-						localToken);
+				doRequest("get", url + "/usage", federationToken);
 			} else if (usage.members) {
-				doRequest("get", url + "/usage/members", federationToken,
-						localToken);
+				doRequest("get", url + "/usage/members", federationToken);
 			} else if (usage.users) {
-				doRequest("get", url + "/usage/users", federationToken,
-						localToken);
+				doRequest("get", url + "/usage/users", federationToken);
 			} else {
 				jc.usage();
 				return;
@@ -526,14 +578,12 @@ public class Main {
 		return token.replace("\n", "");
 	}	
 
-	private static void doRequest(String method, String endpoint, String federationToken,
-			String localToken) throws URISyntaxException, HttpException, IOException {
-		doRequest(method, endpoint, federationToken, localToken, new LinkedList<Header>());
+	private static void doRequest(String method, String endpoint, String federationToken) throws URISyntaxException, HttpException, IOException {
+		doRequest(method, endpoint, federationToken, new LinkedList<Header>());
 	}
 
-	private static void doRequest(String method, String endpoint, String federationToken,
-			String localToken, List<Header> additionalHeaders) throws URISyntaxException,
-			HttpException, IOException {
+	private static void doRequest(String method, String endpoint, String federationToken, 
+			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
 			request = new HttpGet(endpoint);
@@ -545,9 +595,6 @@ public class Main {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		if (federationToken != null) {
 			request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, federationToken);
-		}
-		if (localToken != null) {
-			request.addHeader(OCCIHeaders.X_LOCAL_AUTH_TOKEN, localToken);
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
@@ -611,12 +658,6 @@ public class Main {
 		
 		@Parameter(names = "--federation-auth-file", description = "federation auth file")
 		String federationAuthFile = null;
-		
-		@Parameter(names = "--local-auth-token", description = "local auth token")
-		String localAuthToken = null;
-		
-		@Parameter(names = "--local-auth-file", description = "local auth file")
-		String localAuthFile = null;		
 	}
 
 	@Parameters(separators = "=", commandDescription = "Members operations")
@@ -680,9 +721,24 @@ public class Main {
 
 		@Parameter(names = "--delete", description = "Delete instance")
 		Boolean delete = false;
+		
+		@Parameter(names = "--create", description = "Create instance directly")
+		Boolean create = false;
 
 		@Parameter(names = "--id", description = "Instance id")
 		String instanceId = null;
+		
+		@Parameter(names = "--flavor", description = "Instance flavor")
+		String flavor = null;
+		
+		@Parameter(names = "--image", description = "Instance image")
+		String image = null;
+		
+		@Parameter(names = "--user-data-file", description = "User data file for cloud init")
+		String userDataFile = null;
+		
+		@Parameter(names = "--public-key", description = "Public key")
+		String publicKey = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
@@ -710,6 +766,30 @@ public class Main {
 	private static class ResourceCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "Get all resources")
 		Boolean get = false;
+	}
+	
+	private static class OCCIElement {
+
+		private String term;
+		private String scheme;
+		
+		private OCCIElement(String scheme, String term) {
+			this.term = term;
+			this.scheme = scheme;
+		}
+		
+		public static OCCIElement createOCCIEl(String occiElStr) {
+			int hashIndex = occiElStr.indexOf('#');
+			return new OCCIElement(occiElStr.substring(0, hashIndex + 1), occiElStr.substring(hashIndex + 1));
+		}
+
+		public String getScheme() {
+			return this.scheme;
+		}
+
+		public String getTerm() {
+			return this.term;
+		}
 	}
 
 }
