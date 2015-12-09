@@ -291,9 +291,10 @@ public class TestCli {
 	public void commandGetMember() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/members");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "member --get";
+		String command = "member --get" + " --federation-auth-token " + ACCESS_TOKEN_ID;
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
@@ -568,7 +569,7 @@ public class TestCli {
 							headerEquals = true;
 							break;
 						}
-					}
+					} else 
 					if (header.getName().equals(comparedHeader.getName())
 							&& header.getValue().equals(comparedHeader.getValue())) {
 						headerEquals = true;

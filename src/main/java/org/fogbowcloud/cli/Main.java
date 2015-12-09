@@ -110,7 +110,13 @@ public class Main {
 
 		if (parsedCommand.equals("member")) {
 			String url = member.url;
-			doRequest("get", url + "/members", null);
+			
+			String federationToken = normalizeTokenFile(member.federationAuthFile);
+			if (federationToken == null) {
+				federationToken = normalizeToken(member.federationAuthToken);
+			}
+			
+			doRequest("get", url + "/members", federationToken);
 		} else if (parsedCommand.equals("request")) {
 			String url = request.url;
 			
@@ -661,7 +667,7 @@ public class Main {
 	}
 
 	@Parameters(separators = "=", commandDescription = "Members operations")
-	private static class MemberCommand extends Command {
+	private static class MemberCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "List federation members")
 		Boolean get = true;
 	}
