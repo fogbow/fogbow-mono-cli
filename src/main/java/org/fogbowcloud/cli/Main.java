@@ -120,9 +120,9 @@ public class Main {
 		} else if (parsedCommand.equals("request")) {
 			String url = request.url;
 			
-			String federationToken = normalizeTokenFile(request.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(request.federationAuthToken);
+			String authToken = normalizeTokenFile(request.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(request.authToken);
 			}
 			
 			if (request.get) {
@@ -131,16 +131,16 @@ public class Main {
 					return;
 				}
 				if (request.requestId != null) {
-					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
+					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId, authToken);
 				} else {
-					doRequest("get", url + "/" + RequestConstants.TERM, federationToken);
+					doRequest("get", url + "/" + RequestConstants.TERM, authToken);
 				}
 			} else if (request.delete) {
 				if (request.create || request.get || request.requestId == null) {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
+				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId, authToken);
 			} else if (request.create) {
 				if (request.delete || request.get || request.requestId != null) {
 					jc.usage();
@@ -218,14 +218,14 @@ public class Main {
 							"org.fogbowcloud.request.requirements" + "=" + requirements));
 				}
 				
-				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, headers);
+				doRequest("post", url + "/" + RequestConstants.TERM, authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
 			String url = instance.url;
 			
-			String federationToken = normalizeTokenFile(instance.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(instance.federationAuthToken);
+			String authToken = normalizeTokenFile(instance.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(instance.authToken);
 			}
 			
 			if (instance.delete && instance.get) {
@@ -234,9 +234,9 @@ public class Main {
 			}
 			if (instance.get) {
 				if (instance.instanceId != null) {
-					doRequest("get", url + "/compute/" + instance.instanceId, federationToken);
+					doRequest("get", url + "/compute/" + instance.instanceId, authToken);
 				} else {
-					doRequest("get", url + "/compute/", federationToken);
+					doRequest("get", url + "/compute/", authToken);
 				}
 			} else if (instance.delete) {
 				if (instance.instanceId == null) {
@@ -244,7 +244,7 @@ public class Main {
 					return;
 				}
 
-				doRequest("delete", url + "/compute/" + instance.instanceId, federationToken);
+				doRequest("delete", url + "/compute/" + instance.instanceId, authToken);
 			} else if (instance.create) {
 				if (instance.delete || instance.get || instance.instanceId != null) {
 					jc.usage();
@@ -319,7 +319,7 @@ public class Main {
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.name=fogbow"));
 				}
-				doRequest("post", url + "/compute/", federationToken, headers);
+				doRequest("post", url + "/compute/", authToken, headers);
 			}
 		} else if (parsedCommand.equals("token")) {
 			if (token.check) {
@@ -332,18 +332,18 @@ public class Main {
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
 			
-			String federationToken = normalizeTokenFile(resource.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(resource.federationAuthToken);
+			String authToken = normalizeTokenFile(resource.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(resource.authToken);
 			}
 						
-			doRequest("get", url + "/-/", federationToken);
+			doRequest("get", url + "/-/", authToken);
 		} else if (parsedCommand.equals("usage")) {
 			String url = usage.url;
 			
-			String federationToken = normalizeTokenFile(usage.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(usage.federationAuthToken);
+			String authToken = normalizeTokenFile(usage.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(usage.authToken);
 			}
 			
 			if (!usage.members && !usage.users) {
@@ -352,11 +352,11 @@ public class Main {
 			}
 			
 			if (usage.members && usage.users) {
-				doRequest("get", url + "/usage", federationToken);
+				doRequest("get", url + "/usage", authToken);
 			} else if (usage.members) {
-				doRequest("get", url + "/usage/members", federationToken);
+				doRequest("get", url + "/usage/members", authToken);
 			} else if (usage.users) {
-				doRequest("get", url + "/usage/users", federationToken);
+				doRequest("get", url + "/usage/users", authToken);
 			} else {
 				jc.usage();
 				return;
@@ -584,11 +584,11 @@ public class Main {
 		return token.replace("\n", "");
 	}	
 
-	private static void doRequest(String method, String endpoint, String federationToken) throws URISyntaxException, HttpException, IOException {
-		doRequest(method, endpoint, federationToken, new LinkedList<Header>());
+	private static void doRequest(String method, String endpoint, String authToken) throws URISyntaxException, HttpException, IOException {
+		doRequest(method, endpoint, authToken, new LinkedList<Header>());
 	}
 
-	private static void doRequest(String method, String endpoint, String federationToken, 
+	private static void doRequest(String method, String endpoint, String authToken, 
 			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
@@ -599,8 +599,8 @@ public class Main {
 			request = new HttpPost(endpoint);
 		}
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		if (federationToken != null) {
-			request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, federationToken);
+		if (authToken != null) {
+			request.addHeader(OCCIHeaders.X_AUTH_TOKEN, authToken);
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
@@ -659,11 +659,11 @@ public class Main {
 	}
 
 	private static class AuthedCommand extends Command {
-		@Parameter(names = "--federation-auth-token", description = "federation auth token")
-		String federationAuthToken = null;
+		@Parameter(names = "--auth-token", description = "auth token")
+		String authToken = null;
 		
-		@Parameter(names = "--federation-auth-file", description = "federation auth file")
-		String federationAuthFile = null;
+		@Parameter(names = "--auth-file", description = "auth file")
+		String authFile = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Members operations")
