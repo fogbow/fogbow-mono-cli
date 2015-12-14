@@ -291,7 +291,7 @@ public class TestCli {
 	public void commandGetMember() throws Exception {
 		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/members");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "member --get" + " --federation-auth-token " + ACCESS_TOKEN_ID;

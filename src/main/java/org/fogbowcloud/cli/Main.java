@@ -111,9 +111,9 @@ public class Main {
 		if (parsedCommand.equals("member")) {
 			String url = member.url;
 			
-			String federationToken = normalizeTokenFile(member.federationAuthFile);
+			String federationToken = normalizeTokenFile(member.authFile);
 			if (federationToken == null) {
-				federationToken = normalizeToken(member.federationAuthToken);
+				federationToken = normalizeToken(member.authToken);
 			}
 			
 			doRequest("get", url + "/members", federationToken);
