@@ -108,15 +108,25 @@ public class Main {
 			return;
 		}
 
-		if (parsedCommand.equals("member")) {
-			String url = member.url;
+		if (parsedCommand.equals("member")) {	
+			String url = member.url;		
 			
 			String federationToken = normalizeTokenFile(member.authFile);
 			if (federationToken == null) {
 				federationToken = normalizeToken(member.authToken);
 			}
 			
-			doRequest("get", url + "/members", federationToken);
+			if (member.memberId != null) {
+				if (!member.quota) {
+					jc.usage();
+					return;
+				}
+				
+				doRequest("get", url + "/member/" + member.memberId + "/quota", federationToken);
+			} else {
+				doRequest("get", url + "/member", federationToken);				
+			}
+			
 		} else if (parsedCommand.equals("request")) {
 			String url = request.url;
 			
@@ -668,8 +678,14 @@ public class Main {
 
 	@Parameters(separators = "=", commandDescription = "Members operations")
 	private static class MemberCommand extends AuthedCommand {
-		@Parameter(names = "--get", description = "List federation members")
-		Boolean get = true;
+		@Parameter(names = "--quota", description = "Quota")
+		Boolean quota = false;
+		
+		@Parameter(names = "--id", description = "Member Id")
+		String memberId = null;
+					
+		@Parameter(names = "--usage", description = "Usage")
+		Boolean usage = false;		
 	}
 	
 	@Parameters(separators = "=", commandDescription = "Usage consults")
