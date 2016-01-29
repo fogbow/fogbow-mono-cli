@@ -288,17 +288,32 @@ public class TestCli {
 
 	@SuppressWarnings("static-access")
 	@Test
-	public void commandGetMember() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/members");
+	public void commandGetMembers() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/member");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "member --get" + " --federation-auth-token " + ACCESS_TOKEN_ID;
+		String command = "member --auth-token " + ACCESS_TOKEN_ID;
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetMemberQuota() throws Exception {
+		String id = "id";
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/member/" + id + "/quota");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "member --quota --id " + id  + " --auth-token " + ACCESS_TOKEN_ID;
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}	
 
 	@SuppressWarnings("static-access")
 	@Test
