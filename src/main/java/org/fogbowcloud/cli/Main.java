@@ -42,8 +42,8 @@ import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
-import org.fogbowcloud.manager.occi.request.RequestAttribute;
-import org.fogbowcloud.manager.occi.request.RequestConstants;
+import org.fogbowcloud.manager.occi.order.OrderAttribute;
+import org.fogbowcloud.manager.occi.order.OrderConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -61,7 +61,7 @@ public class Main {
 	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins.identity";
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
-	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
+	protected static final String DEFAULT_TYPE = OrderConstants.DEFAULT_TYPE;
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -81,8 +81,8 @@ public class Main {
 		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
-		RequestCommand request = new RequestCommand();
-		jc.addCommand("request", request);
+		OrderCommand order = new OrderCommand();
+		jc.addCommand("order", order);
 		InstanceCommand instance = new InstanceCommand();
 		jc.addCommand("instance", instance);
 		TokenCommand token = new TokenCommand();
@@ -127,98 +127,98 @@ public class Main {
 				doRequest("get", url + "/member", federationToken);				
 			}
 			
-		} else if (parsedCommand.equals("request")) {
-			String url = request.url;
+		} else if (parsedCommand.equals("order")) {
+			String url = order.url;
 			
-			String authToken = normalizeTokenFile(request.authFile);
+			String authToken = normalizeTokenFile(order.authFile);
 			if (authToken == null) {
-				authToken = normalizeToken(request.authToken);
+				authToken = normalizeToken(order.authToken);
 			}
 			
-			if (request.get) {
-				if (request.create || request.delete) {
+			if (order.get) {
+				if (order.create || order.delete) {
 					jc.usage();
 					return;
 				}
-				if (request.requestId != null) {
-					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId, authToken);
+				if (order.orderId != null) {
+					doRequest("get", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
 				} else {
-					doRequest("get", url + "/" + RequestConstants.TERM, authToken);
+					doRequest("get", url + "/" + OrderConstants.TERM, authToken);
 				}
-			} else if (request.delete) {
-				if (request.create || request.get || request.requestId == null) {
+			} else if (order.delete) {
+				if (order.create || order.get || order.orderId == null) {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId, authToken);
-			} else if (request.create) {
-				if (request.delete || request.get || request.requestId != null) {
+				doRequest("delete", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
+			} else if (order.create) {
+				if (order.delete || order.get || order.orderId != null) {
 					jc.usage();
 					return;
 				}
 
-				if (!request.type.equals("one-time") && !request.type.equals("persistent")) {
+				if (!order.type.equals("one-time") && !order.type.equals("persistent")) {
 					jc.usage();
 					return;
 				}
 				
 				List<Header> headers = new LinkedList<Header>();
-				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
-						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+				headers.add(new BasicHeader("Category", OrderConstants.TERM + "; scheme=\""
+						+ OrderConstants.SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
 						+ "\""));
-				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.INSTANCE_COUNT
-						.getValue() + "=" + request.instanceCount));
-				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
-						+ "=" + request.type));
-				if (request.flavor != null && !request.flavor.isEmpty()) {
-					headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-							+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));					
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT
+						.getValue() + "=" + order.instanceCount));
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue()
+						+ "=" + order.type));
+				if (order.flavor != null && !order.flavor.isEmpty()) {
+					headers.add(new BasicHeader("Category", order.flavor + "; scheme=\""
+							+ OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+							+ OrderConstants.MIXIN_CLASS + "\""));					
 				}
-				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
-						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+				headers.add(new BasicHeader("Category", order.image + "; scheme=\""
+						+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
+						+ OrderConstants.MIXIN_CLASS + "\""));
 				
-				if (request.userDataFile != null && !request.userDataFile.isEmpty()) {
-					if (request.userDataFileContentType == null 
-							|| request.userDataFileContentType.isEmpty()) {
+				if (order.userDataFile != null && !order.userDataFile.isEmpty()) {
+					if (order.userDataFileContentType == null 
+							|| order.userDataFileContentType.isEmpty()) {
 						System.out.println("Content type of user data file cannot be empty.");
 						return;
 					}
 					try {
-						String userDataContent = getFileContent(request.userDataFile);
+						String userDataContent = getFileContent(order.userDataFile);
 						String userData = userDataContent.replace("\n",
 								UserdataUtils.USER_DATA_LINE_BREAKER);
 						userData = new String(Base64.encodeBase64(userData.getBytes()));
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+								OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
-								+ "=" + request.userDataFileContentType));
+								OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
+								+ "=" + order.userDataFileContentType));
 					} catch (IOException e) {
 						System.out.println("User data file not found.");
 						return;
 					}
 				}
 
-				if (request.publicKey != null && !request.publicKey.isEmpty()) {
+				if (order.publicKey != null && !order.publicKey.isEmpty()) {
 
 					try {
-						request.publicKey = getFileContent(request.publicKey);
+						order.publicKey = getFileContent(order.publicKey);
 					} catch (IOException e) {
 						System.out.println("Public key file not found.");
 						return;
 					}
 
-					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
-							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
-							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
+					headers.add(new BasicHeader("Category", OrderConstants.PUBLIC_KEY_TERM
+							+ "; scheme=\"" + OrderConstants.CREDENTIALS_RESOURCE_SCHEME
+							+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 					headers.add(new BasicHeader("X-OCCI-Attribute",
-							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
+							OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
 				}
 				
-				if (request.requirements != null) {
-					String requirements = Joiner.on(" ").join(request.requirements);
+				if (order.requirements != null) {
+					String requirements = Joiner.on(" ").join(order.requirements);
 					if (requirements.isEmpty()) {
 						System.out.println("Requirements empty.");
 						jc.usage();
@@ -228,7 +228,7 @@ public class Main {
 							"org.fogbowcloud.request.requirements" + "=" + requirements));
 				}
 				
-				doRequest("post", url + "/" + RequestConstants.TERM, authToken, headers);
+				doRequest("post", url + "/" + OrderConstants.TERM, authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
 			String url = instance.url;
@@ -262,8 +262,8 @@ public class Main {
 				}
 				
 				List<Header> headers = new LinkedList<Header>();
-				headers.add(new BasicHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
-						+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+				headers.add(new BasicHeader("Category", OrderConstants.COMPUTE_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
 						+ "\""));
 								
 				// flavor
@@ -276,7 +276,7 @@ public class Main {
 					
 					headers.add(new BasicHeader("Category", occiFlavorEl.getTerm() + "; scheme=\""
 							+ occiFlavorEl.getScheme() + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));					
+							+ OrderConstants.MIXIN_CLASS + "\""));					
 				}
 				
 				// image
@@ -288,7 +288,7 @@ public class Main {
 				
 				headers.add(new BasicHeader("Category", occiImageEl.getTerm() + "; scheme=\""
 						+ occiImageEl.getScheme() + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+						+ OrderConstants.MIXIN_CLASS + "\""));
 				
 				// userdata
 				if (instance.userDataFile != null && !instance.userDataFile.isEmpty()) {
@@ -300,7 +300,7 @@ public class Main {
 						
 						headers.add(new BasicHeader("Category", "user_data" + "; scheme=\""
 								+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
-								+ RequestConstants.MIXIN_CLASS + "\""));
+								+ OrderConstants.MIXIN_CLASS + "\""));
 							
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
 								"org.openstack.compute.user_data=" + userData));						
@@ -322,7 +322,7 @@ public class Main {
 					
 					headers.add(new BasicHeader("Category", "public_key" + "; scheme=\""
 							+ "http://schemas.openstack.org/instance/credentials#" + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));
+							+ OrderConstants.MIXIN_CLASS + "\""));
 
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.data=" + instance.publicKey));
@@ -629,7 +629,7 @@ public class Main {
 		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
 				|| response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) {
 			Header locationHeader = getLocationHeader(response.getAllHeaders());
-			if (locationHeader != null && locationHeader.getValue().contains(RequestConstants.TERM)) {
+			if (locationHeader != null && locationHeader.getValue().contains(OrderConstants.TERM)) {
 				System.out.println(generateLocationHeaderResponse(locationHeader));
 			} else {
 				System.out.println(EntityUtils.toString(response.getEntity()));
@@ -697,19 +697,19 @@ public class Main {
 		Boolean users = false;
 	}
 
-	@Parameters(separators = "=", commandDescription = "Request operations")
-	private static class RequestCommand extends AuthedCommand {
-		@Parameter(names = "--get", description = "Get request")
+	@Parameters(separators = "=", commandDescription = "Order operations")
+	private static class OrderCommand extends AuthedCommand {
+		@Parameter(names = "--get", description = "Get order")
 		Boolean get = false;
 
-		@Parameter(names = "--create", description = "Create request")
+		@Parameter(names = "--create", description = "Create order")
 		Boolean create = false;
 
-		@Parameter(names = "--delete", description = "Delete request")
+		@Parameter(names = "--delete", description = "Delete order")
 		Boolean delete = false;
 
-		@Parameter(names = "--id", description = "Request id")
-		String requestId = null;
+		@Parameter(names = "--id", description = "Order id")
+		String orderId = null;
 
 		@Parameter(names = "--n", description = "Instance count")
 		int instanceCount = Main.DEFAULT_INTANCE_COUNT;
@@ -720,7 +720,7 @@ public class Main {
 		@Parameter(names = "--flavor", description = "Instance flavor")
 		String flavor = null;
 
-		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
+		@Parameter(names = "--type", description = "Order type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
 		@Parameter(names = "--public-key", description = "Public key")
