@@ -105,7 +105,7 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/order#\"; class=\"kind\"");
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ intanceCount);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
@@ -115,16 +115,88 @@ public class TestCli {
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);				
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
 				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --requirements " + requirements + " --flavor " + flavor;
+				+ " --requirements " + requirements + " --flavor " + flavor + " --resource-kind " 
+				+ OrderConstants.COMPUTE_TERM;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithoutResourceKind() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);			
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + "--image " + "image" + " --auth-token " + ACCESS_TOKEN_ID
+				+ " --requirements " + requirements + " --flavor " + "flavor";
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client, Mockito.times(0)).execute(Mockito.argThat(expectedRequest));
+	}	
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithResourceKindStorage() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+		final String size = "20";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", OrderConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.STORAGE_SIZE.getValue() + "=" + size);				
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.STORAGE_TERM);				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
+				+  " --resource-kind " + OrderConstants.STORAGE_TERM + " --size " + size;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithResourceKindStorageWithoutSizeAttribute() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
+				+  " --resource-kind " + OrderConstants.STORAGE_TERM;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client, Mockito.times(0)).execute(Mockito.argThat(expectedRequest));
+	}		
 	
 	@SuppressWarnings("static-access")
 	@Test
@@ -142,7 +214,7 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/order#\"; class=\"kind\"");
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ intanceCount);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
@@ -155,12 +227,14 @@ public class TestCli {
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
 				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
 				+ " --requirements " + requirements + " --flavor " + flavor + " --user-data-file " + userDataPath
-				+ " --user-data-file-content-type " + type;
+				+ " --user-data-file-content-type " + type + " --resource-kind compute";
 
 		cli.main(createArgs(command));
 
@@ -177,7 +251,7 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/order#\"; class=\"kind\"");
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
 				+ intanceCount);
 		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
@@ -186,11 +260,13 @@ public class TestCli {
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);				
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
 				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --flavor " + flavor;
+				+ " --flavor " + flavor + " --resource-kind compute";
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
@@ -213,10 +289,12 @@ public class TestCli {
 				+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 				+ OrderConstants.MIXIN_CLASS + "\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);		
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "order --create --url " + Main.DEFAULT_URL + " --auth-token "
-				+ ACCESS_TOKEN_ID + " --requirements " + requirements;
+				+ ACCESS_TOKEN_ID + " --requirements " + requirements  + " --resource-kind compute";
 
 		cli.main(createArgs(command));
 
@@ -562,6 +640,7 @@ public class TestCli {
 		}
 
 		public boolean matches(Object object) {
+
 			HttpUriRequest comparedRequest = (HttpUriRequest) object;
 			if (!this.request.getURI().equals(comparedRequest.getURI())) {
 				return false;

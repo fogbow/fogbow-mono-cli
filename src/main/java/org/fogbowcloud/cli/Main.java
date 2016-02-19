@@ -91,6 +91,8 @@ public class Main {
 		jc.addCommand("resource", resource);
         UsageCommand usage = new UsageCommand();
         jc.addCommand("usage", usage);
+        StorageCommand storage = new StorageCommand();
+        jc.addCommand("storage", storage);        
 
 		jc.setProgramName("fogbow-cli");
 		try {
@@ -170,52 +172,69 @@ public class Main {
 						.getValue() + "=" + order.instanceCount));
 				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue()
 						+ "=" + order.type));
-				if (order.flavor != null && !order.flavor.isEmpty()) {
-					headers.add(new BasicHeader("Category", order.flavor + "; scheme=\""
-							+ OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-							+ OrderConstants.MIXIN_CLASS + "\""));					
-				}
-				headers.add(new BasicHeader("Category", order.image + "; scheme=\""
-						+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
-						+ OrderConstants.MIXIN_CLASS + "\""));
 				
-				if (order.userDataFile != null && !order.userDataFile.isEmpty()) {
-					if (order.userDataFileContentType == null 
-							|| order.userDataFileContentType.isEmpty()) {
-						System.out.println("Content type of user data file cannot be empty.");
-						return;
+				if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.COMPUTE_TERM)) {
+					if (order.flavor != null && !order.flavor.isEmpty()) {
+						headers.add(new BasicHeader("Category", order.flavor + "; scheme=\""
+								+ OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+								+ OrderConstants.MIXIN_CLASS + "\""));					
 					}
-					try {
-						String userDataContent = getFileContent(order.userDataFile);
-						String userData = userDataContent.replace("\n",
-								UserdataUtils.USER_DATA_LINE_BREAKER);
-						userData = new String(Base64.encodeBase64(userData.getBytes()));
+					headers.add(new BasicHeader("Category", order.image + "; scheme=\""
+							+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
+							+ OrderConstants.MIXIN_CLASS + "\""));
+					
+					if (order.userDataFile != null && !order.userDataFile.isEmpty()) {
+						if (order.userDataFileContentType == null 
+								|| order.userDataFileContentType.isEmpty()) {
+							System.out.println("Content type of user data file cannot be empty.");
+							return;
+						}
+						try {
+							String userDataContent = getFileContent(order.userDataFile);
+							String userData = userDataContent.replace("\n",
+									UserdataUtils.USER_DATA_LINE_BREAKER);
+							userData = new String(Base64.encodeBase64(userData.getBytes()));
+							headers.add(new BasicHeader("X-OCCI-Attribute", 
+									OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+							headers.add(new BasicHeader("X-OCCI-Attribute", 
+									OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
+									+ "=" + order.userDataFileContentType));
+						} catch (IOException e) {
+							System.out.println("User data file not found.");
+							return;
+						}
+					}
+					
+					if (order.publicKey != null && !order.publicKey.isEmpty()) {
+						
+						try {
+							order.publicKey = getFileContent(order.publicKey);
+						} catch (IOException e) {
+							System.out.println("Public key file not found.");
+							return;
+						}
+						
+						headers.add(new BasicHeader("Category", OrderConstants.PUBLIC_KEY_TERM
+								+ "; scheme=\"" + OrderConstants.CREDENTIALS_RESOURCE_SCHEME
+								+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
+						headers.add(new BasicHeader("X-OCCI-Attribute",
+								OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
+					}					
+				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
+					if (order.size != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
-						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
-								+ "=" + order.userDataFileContentType));
-					} catch (IOException e) {
-						System.out.println("User data file not found.");
+								OrderAttribute.STORAGE_SIZE.getValue() + "=" + order.size));						
+					} else {
+						System.out.println("Size is required when resoure kind is storage");
 						return;
 					}
+				} else {
+					System.out.println("Resource Storage is required. Types allowed : compute, storage");
+					return;
 				}
-
-				if (order.publicKey != null && !order.publicKey.isEmpty()) {
-
-					try {
-						order.publicKey = getFileContent(order.publicKey);
-					} catch (IOException e) {
-						System.out.println("Public key file not found.");
-						return;
-					}
-
-					headers.add(new BasicHeader("Category", OrderConstants.PUBLIC_KEY_TERM
-							+ "; scheme=\"" + OrderConstants.CREDENTIALS_RESOURCE_SCHEME
-							+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
-					headers.add(new BasicHeader("X-OCCI-Attribute",
-							OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
-				}
+				
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.RESOURCE_KIND
+						.getValue() + "=" + order.resourceKind));							
 				
 				if (order.requirements != null) {
 					String requirements = Joiner.on(" ").join(order.requirements);
@@ -371,6 +390,40 @@ public class Main {
 				jc.usage();
 				return;
 			}
+		} else if (parsedCommand.equals("storage")) {
+			String url = storage.url;
+			
+			String authToken = normalizeTokenFile(storage.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(storage.authToken);
+			}
+			
+			if (storage.get) {
+				if (storage.delete) {
+					jc.usage();
+					return;							
+				}
+				
+				if (storage.storageId == null) {
+					doRequest("get", url + "/" + OrderConstants.STORAGE_TERM, authToken);
+					return;
+				} 
+				doRequest("get", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+			} else if (storage.delete) {
+				if (storage.get) {
+					jc.usage();
+					return;							
+				}
+
+				if (storage.storageId == null) {
+					doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM, authToken);
+					return;
+				} 
+				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+			} else {
+				jc.usage();
+				return;				
+			}			
 		}
 	}
 	
@@ -734,6 +787,12 @@ public class Main {
 		
 		@Parameter(names = "--user-data-file-content-type", description = "Content type of user data file for cloud init")
 		String userDataFileContentType = null;
+		
+		@Parameter(names = "--size", description = "Size instance storage")
+		String size = null;
+		
+		@Parameter(names = "--resource-kind", description = "Resource kind")
+		String resourceKind = null;		
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
@@ -762,6 +821,18 @@ public class Main {
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
 	}
+	
+	@Parameters(separators = "=", commandDescription = "Instance storage operations")
+	private static class StorageCommand extends AuthedCommand {
+		@Parameter(names = "--get", description = "Get instance storage data")
+		Boolean get = false;
+
+		@Parameter(names = "--delete", description = "Delete instance storage")
+		Boolean delete = false;	
+
+		@Parameter(names = "--id", description = "Instance storage id")
+		String storageId = null;		
+	}	
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
 	protected static class TokenCommand {
