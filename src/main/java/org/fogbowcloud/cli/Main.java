@@ -91,8 +91,10 @@ public class Main {
 		jc.addCommand("resource", resource);
         UsageCommand usage = new UsageCommand();
         jc.addCommand("usage", usage);
+        AccountingCommand accounting = new AccountingCommand();
+        jc.addCommand("accounting", accounting);
 
-		jc.setProgramName("fogbow-cli");
+        jc.setProgramName("fogbow-cli");
 		try {
 			jc.parse(args);
 		} catch (Exception e) {
@@ -371,6 +373,15 @@ public class Main {
 				jc.usage();
 				return;
 			}
+		} else if (parsedCommand.equals("accounting")) {
+			String url = accounting.url;
+			
+			String authToken = normalizeTokenFile(accounting.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(accounting.authToken);
+			}			
+			
+			doRequest("get", url + "/member/accounting", authToken);
 		}
 	}
 	
@@ -695,6 +706,11 @@ public class Main {
 
 		@Parameter(names = "--users", description = "List users' usage")
 		Boolean users = false;
+	}
+	
+	@Parameters(separators = "=", commandDescription = "Accounting consult")
+	private static class AccountingCommand extends AuthedCommand {
+		// There aren't specific commands to this one
 	}
 
 	@Parameters(separators = "=", commandDescription = "Order operations")
