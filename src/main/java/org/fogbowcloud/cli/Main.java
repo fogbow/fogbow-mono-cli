@@ -44,6 +44,7 @@ import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.order.OrderAttribute;
 import org.fogbowcloud.manager.occi.order.OrderConstants;
+import org.fogbowcloud.manager.occi.storage.StorageAttribute;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -92,7 +93,9 @@ public class Main {
         UsageCommand usage = new UsageCommand();
         jc.addCommand("usage", usage);
         StorageCommand storage = new StorageCommand();
-        jc.addCommand("storage", storage);        
+        jc.addCommand("storage", storage);
+        AttachmentCommand attachment = new AttachmentCommand();
+        jc.addCommand("attachment", attachment);
 
 		jc.setProgramName("fogbow-cli");
 		try {
@@ -402,7 +405,7 @@ public class Main {
 				if (storage.delete) {
 					jc.usage();
 					return;							
-				}
+				}	
 				
 				if (storage.storageId == null) {
 					doRequest("get", url + "/" + OrderConstants.STORAGE_TERM, authToken);
@@ -424,6 +427,58 @@ public class Main {
 				jc.usage();
 				return;				
 			}			
+		} else if (parsedCommand.equals("attachment")) {
+			String url = attachment.url;
+			
+			String authToken = normalizeTokenFile(attachment.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(attachment.authToken);
+			}			
+			
+			if (attachment.create) {
+				if (attachment.delete || attachment.get) {
+					jc.usage();
+					return;							
+				}
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", OrderConstants.STORAGELINK_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
+						+ "\""));				
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.SOURCE.getValue() + "=" + attachment.computeId));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.TARGET.getValue() + "=" + attachment.storageId));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.DEVICE_ID.getValue() + "=" + attachment.mountPoint));				
+				
+				doRequest("post", url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/", authToken, headers);				
+			} else if (attachment.delete) {
+				if (attachment.get || attachment.create) {
+					jc.usage();
+					return;							
+				}
+
+				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/" + attachment.id, authToken);		
+			} else if (attachment.get) {
+				if (attachment.create || attachment.delete) {
+					jc.usage();
+					return;							
+				}
+				
+				String endpoint = url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/";
+				if (attachment.id != null) {
+					endpoint += attachment.id;
+				}
+				doRequest("get", endpoint , authToken);									
+			} else {
+				jc.usage();
+				return;	
+			}
+			
 		}
 	}
 	
@@ -824,7 +879,7 @@ public class Main {
 	
 	@Parameters(separators = "=", commandDescription = "Instance storage operations")
 	private static class StorageCommand extends AuthedCommand {
-		@Parameter(names = "--get", description = "Get instance storage data")
+		@Parameter(names = "--get", description = "Get instance storage")
 		Boolean get = false;
 
 		@Parameter(names = "--delete", description = "Delete instance storage")
@@ -833,6 +888,30 @@ public class Main {
 		@Parameter(names = "--id", description = "Instance storage id")
 		String storageId = null;		
 	}	
+	
+	@Parameters(separators = "=", commandDescription = "Attachment operations")
+	private static class AttachmentCommand extends AuthedCommand {
+		@Parameter(names = "--create", description = "Attachment create")
+		Boolean create = false;
+		
+		@Parameter(names = "--delete", description = "Attachment delete")
+		Boolean delete = false;		
+
+		@Parameter(names = "--get", description = "Get attachment")
+		Boolean get = false;	
+
+		@Parameter(names = "--id", description = "Attachment id")
+		String id = null;
+		
+		@Parameter(names = "--storageId", description = "Storage id attribute")
+		String storageId = null;
+		
+		@Parameter(names = "--computeId", description = "Compute id attribute")
+		String computeId = null;		
+		
+		@Parameter(names = "--mountPoint", description = "Mount point attribute")
+		String mountPoint = null;				
+	}		
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
 	protected static class TokenCommand {

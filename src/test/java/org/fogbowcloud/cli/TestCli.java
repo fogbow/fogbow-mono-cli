@@ -31,6 +31,7 @@ import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.order.OrderAttribute;
 import org.fogbowcloud.manager.occi.order.OrderConstants;
+import org.fogbowcloud.manager.occi.storage.StorageAttribute;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -626,6 +627,90 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostAttachment() throws Exception {
+		final String source = "source";
+		final String target = "target";
+		final String deviceId = "deviceId";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
+				+ OrderConstants.STORAGE_LINK_TERM + "/");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);		
+		request.addHeader("Category", OrderConstants.STORAGELINK_TERM
+				+ "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" 
+				+ OrderConstants.KIND_CLASS +"\"");
+		request.addHeader("X-OCCI-Attribute", StorageAttribute.SOURCE.getValue() + "="
+				+ source);
+		request.addHeader("X-OCCI-Attribute", StorageAttribute.DEVICE_ID.getValue() + "="
+				+ deviceId);
+		request.addHeader("X-OCCI-Attribute", StorageAttribute.TARGET.getValue() + "="
+				+ target);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "attachment --create --url " + Main.DEFAULT_URL
+				+ " " + "--computeId " + source + " --auth-token " + ACCESS_TOKEN_ID
+				+ " --storageId " + target + " --mountPoint " + deviceId;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetAttachment() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
+				+ OrderConstants.STORAGE_LINK_TERM + "/");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "attachment --get --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetSpecificAttachment() throws Exception {
+		String storageLinkId = "storageLinkId";
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
+				+ OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "attachment --get --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --id " + storageLinkId;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}		
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandDeleteSpecificAttachment() throws Exception {
+		String storageLinkId = "storageLinkId";
+		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
+				+ OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+		
+		String command = "attachment --delete --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --id " + storageLinkId;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}	
 	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
