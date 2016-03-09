@@ -538,13 +538,36 @@ public class Main {
 					properties.put(credEntry.getKey(), credEntry.getValue());
 				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
-				try {
-					Token tokenInfo = identityPlugin.getToken(token.token);
-					return tokenInfo.toString();					
-				} catch (Exception e) {
-					// Do Nothing
-				}
 			}
+			
+			try {
+				Token tokenInfo = identityPlugin.getToken(token.token);
+				if (token.accessId == false && token.user == false && token.attributes == false) {
+					return tokenInfo.toString();
+				}
+				
+				String responseStr = "";
+				if (token.accessId ) {
+					responseStr = tokenInfo.getAccessId();
+				}
+				if (token.user) {
+					if (!responseStr.isEmpty()) {
+						responseStr += ",";
+					}
+					responseStr += tokenInfo.getUser();
+				}
+				if (token.attributes) {
+					if (!responseStr.isEmpty()) {
+						responseStr += ",";
+					}
+					responseStr += tokenInfo.getAttributes();
+				}
+				
+				return responseStr;
+			} catch (Exception e) {
+				// Do Nothing
+			}
+			
 		} catch (Exception e) {
 			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
 					+ possibleTypes + ".";
@@ -932,6 +955,15 @@ public class Main {
 		
 		@Parameter(names = "--token", description = "Token Pure")
 		String token = null;			
+		
+		@Parameter(names = "--user", description = "User information")
+		boolean user = false;			
+		
+		@Parameter(names = "--access-id", description = "Access Id information")
+		boolean accessId = false;			
+		
+		@Parameter(names = "--attributes", description = "Attributes information")
+		boolean attributes = false;					
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
