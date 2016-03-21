@@ -90,8 +90,6 @@ public class Main {
 		jc.addCommand("token", token);
 		ResourceCommand resource = new ResourceCommand();
 		jc.addCommand("resource", resource);
-        UsageCommand usage = new UsageCommand();
-        jc.addCommand("usage", usage);
         StorageCommand storage = new StorageCommand();
         jc.addCommand("storage", storage);
         AttachmentCommand attachment = new AttachmentCommand();
@@ -124,16 +122,22 @@ public class Main {
 			}
 			
 			if (member.memberId != null) {
-				if (!member.quota) {
+				if ((!member.quota && !member.usage) || (member.quota && member.usage)) {
 					jc.usage();
 					return;
 				}
 				
-				doRequest("get", url + "/member/" + member.memberId + "/quota", federationToken);
+				if (member.quota) {
+					doRequest("get", url + "/member/" + member.memberId + "/quota", federationToken);
+				} else if (member.usage) {
+					doRequest("get", url + "/member/" + member.memberId + "/usage", federationToken);
+				} else {
+					jc.usage();
+					return;
+				}				
 			} else {
 				doRequest("get", url + "/member", federationToken);				
 			}
-			
 		} else if (parsedCommand.equals("order")) {
 			String url = order.url;
 			
@@ -372,29 +376,6 @@ public class Main {
 			}
 						
 			doRequest("get", url + "/-/", authToken);
-		} else if (parsedCommand.equals("usage")) {
-			String url = usage.url;
-			
-			String authToken = normalizeTokenFile(usage.authFile);
-			if (authToken == null) {
-				authToken = normalizeToken(usage.authToken);
-			}
-			
-			if (!usage.members && !usage.users) {
-				jc.usage();
-				return;
-			}
-			
-			if (usage.members && usage.users) {
-				doRequest("get", url + "/usage", authToken);
-			} else if (usage.members) {
-				doRequest("get", url + "/usage/members", authToken);
-			} else if (usage.users) {
-				doRequest("get", url + "/usage/users", authToken);
-			} else {
-				jc.usage();
-				return;
-			}
 		} else if (parsedCommand.equals("storage")) {
 			String url = storage.url;
 			
