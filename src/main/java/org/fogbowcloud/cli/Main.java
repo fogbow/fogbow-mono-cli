@@ -42,8 +42,9 @@ import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
-import org.fogbowcloud.manager.occi.request.RequestAttribute;
-import org.fogbowcloud.manager.occi.request.RequestConstants;
+import org.fogbowcloud.manager.occi.order.OrderAttribute;
+import org.fogbowcloud.manager.occi.order.OrderConstants;
+import org.fogbowcloud.manager.occi.storage.StorageAttribute;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -61,7 +62,7 @@ public class Main {
 	protected static final String PLUGIN_PACKAGE = "org.fogbowcloud.manager.core.plugins.identity";
 	protected static final String DEFAULT_URL = "http://localhost:8182";
 	protected static final int DEFAULT_INTANCE_COUNT = 1;
-	protected static final String DEFAULT_TYPE = RequestConstants.DEFAULT_TYPE;
+	protected static final String DEFAULT_TYPE = OrderConstants.DEFAULT_TYPE;
 	protected static final String DEFAULT_IMAGE = "fogbow-linux-x86";
 
 	private static HttpClient client;
@@ -81,18 +82,22 @@ public class Main {
 		
 		MemberCommand member = new MemberCommand();
 		jc.addCommand("member", member);
-		RequestCommand request = new RequestCommand();
-		jc.addCommand("request", request);
+		OrderCommand order = new OrderCommand();
+		jc.addCommand("order", order);
 		InstanceCommand instance = new InstanceCommand();
 		jc.addCommand("instance", instance);
 		TokenCommand token = new TokenCommand();
 		jc.addCommand("token", token);
 		ResourceCommand resource = new ResourceCommand();
 		jc.addCommand("resource", resource);
-        UsageCommand usage = new UsageCommand();
-        jc.addCommand("usage", usage);
+        StorageCommand storage = new StorageCommand();
+        jc.addCommand("storage", storage);
+        AttachmentCommand attachment = new AttachmentCommand();
+        jc.addCommand("attachment", attachment);
+        AccountingCommand accounting = new AccountingCommand();
+        jc.addCommand("accounting", accounting);
 
-		jc.setProgramName("fogbow-cli");
+        jc.setProgramName("fogbow-cli");
 		try {
 			jc.parse(args);
 		} catch (Exception e) {
@@ -108,101 +113,140 @@ public class Main {
 			return;
 		}
 
-		if (parsedCommand.equals("member")) {
-			String url = member.url;
-			doRequest("get", url + "/members", null);
-		} else if (parsedCommand.equals("request")) {
-			String url = request.url;
+		if (parsedCommand.equals("member")) {	
+			String url = member.url;		
 			
-			String federationToken = normalizeTokenFile(request.federationAuthFile);
+			String federationToken = normalizeTokenFile(member.authFile);
 			if (federationToken == null) {
-				federationToken = normalizeToken(request.federationAuthToken);
+				federationToken = normalizeToken(member.authToken);
 			}
 			
-			if (request.get) {
-				if (request.create || request.delete) {
+			if (member.memberId != null) {
+				if ((!member.quota && !member.usage) || (member.quota && member.usage)) {
 					jc.usage();
 					return;
 				}
-				if (request.requestId != null) {
-					doRequest("get", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
+				
+				if (member.quota) {
+					doRequest("get", url + "/member/" + member.memberId + "/quota", federationToken);
+				} else if (member.usage) {
+					doRequest("get", url + "/member/" + member.memberId + "/usage", federationToken);
 				} else {
-					doRequest("get", url + "/" + RequestConstants.TERM, federationToken);
-				}
-			} else if (request.delete) {
-				if (request.create || request.get || request.requestId == null) {
+					jc.usage();
+					return;
+				}				
+			} else {
+				doRequest("get", url + "/member", federationToken);				
+			}
+		} else if (parsedCommand.equals("order")) {
+			String url = order.url;
+			
+			String authToken = normalizeTokenFile(order.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(order.authToken);
+			}
+			
+			if (order.get) {
+				if (order.create || order.delete) {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + RequestConstants.TERM + "/" + request.requestId, federationToken);
-			} else if (request.create) {
-				if (request.delete || request.get || request.requestId != null) {
+				if (order.orderId != null) {
+					doRequest("get", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
+				} else {
+					doRequest("get", url + "/" + OrderConstants.TERM, authToken);
+				}
+			} else if (order.delete) {
+				if (order.create || order.get || order.orderId == null) {
+					jc.usage();
+					return;
+				}
+				doRequest("delete", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
+			} else if (order.create) {
+				if (order.delete || order.get || order.orderId != null) {
 					jc.usage();
 					return;
 				}
 
-				if (!request.type.equals("one-time") && !request.type.equals("persistent")) {
+				if (!order.type.equals("one-time") && !order.type.equals("persistent")) {
 					jc.usage();
 					return;
 				}
 				
 				List<Header> headers = new LinkedList<Header>();
-				headers.add(new BasicHeader("Category", RequestConstants.TERM + "; scheme=\""
-						+ RequestConstants.SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+				headers.add(new BasicHeader("Category", OrderConstants.TERM + "; scheme=\""
+						+ OrderConstants.SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
 						+ "\""));
-				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.INSTANCE_COUNT
-						.getValue() + "=" + request.instanceCount));
-				headers.add(new BasicHeader("X-OCCI-Attribute", RequestAttribute.TYPE.getValue()
-						+ "=" + request.type));
-				if (request.flavor != null && !request.flavor.isEmpty()) {
-					headers.add(new BasicHeader("Category", request.flavor + "; scheme=\""
-							+ RequestConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));					
-				}
-				headers.add(new BasicHeader("Category", request.image + "; scheme=\""
-						+ RequestConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT
+						.getValue() + "=" + order.instanceCount));
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue()
+						+ "=" + order.type));
 				
-				if (request.userDataFile != null && !request.userDataFile.isEmpty()) {
-					if (request.userDataFileContentType == null 
-							|| request.userDataFileContentType.isEmpty()) {
-						System.out.println("Content type of user data file cannot be empty.");
-						return;
+				if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.COMPUTE_TERM)) {
+					if (order.flavor != null && !order.flavor.isEmpty()) {
+						headers.add(new BasicHeader("Category", order.flavor + "; scheme=\""
+								+ OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+								+ OrderConstants.MIXIN_CLASS + "\""));					
 					}
-					try {
-						String userDataContent = getFileContent(request.userDataFile);
-						String userData = userDataContent.replace("\n",
-								UserdataUtils.USER_DATA_LINE_BREAKER);
-						userData = new String(Base64.encodeBase64(userData.getBytes()));
+					headers.add(new BasicHeader("Category", order.image + "; scheme=\""
+							+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
+							+ OrderConstants.MIXIN_CLASS + "\""));
+					
+					if (order.userDataFile != null && !order.userDataFile.isEmpty()) {
+						if (order.userDataFileContentType == null 
+								|| order.userDataFileContentType.isEmpty()) {
+							System.out.println("Content type of user data file cannot be empty.");
+							return;
+						}
+						try {
+							String userDataContent = getFileContent(order.userDataFile);
+							String userData = userDataContent.replace("\n",
+									UserdataUtils.USER_DATA_LINE_BREAKER);
+							userData = new String(Base64.encodeBase64(userData.getBytes()));
+							headers.add(new BasicHeader("X-OCCI-Attribute", 
+									OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+							headers.add(new BasicHeader("X-OCCI-Attribute", 
+									OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
+									+ "=" + order.userDataFileContentType));
+						} catch (IOException e) {
+							System.out.println("User data file not found.");
+							return;
+						}
+					}
+					
+					if (order.publicKey != null && !order.publicKey.isEmpty()) {
+						
+						try {
+							order.publicKey = getFileContent(order.publicKey);
+						} catch (IOException e) {
+							System.out.println("Public key file not found.");
+							return;
+						}
+						
+						headers.add(new BasicHeader("Category", OrderConstants.PUBLIC_KEY_TERM
+								+ "; scheme=\"" + OrderConstants.CREDENTIALS_RESOURCE_SCHEME
+								+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
+						headers.add(new BasicHeader("X-OCCI-Attribute",
+								OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
+					}					
+				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
+					if (order.size != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								RequestAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
-						headers.add(new BasicHeader("X-OCCI-Attribute", 
-								RequestAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() 
-								+ "=" + request.userDataFileContentType));
-					} catch (IOException e) {
-						System.out.println("User data file not found.");
+								OrderAttribute.STORAGE_SIZE.getValue() + "=" + order.size));						
+					} else {
+						System.out.println("Size is required when resoure kind is storage");
 						return;
 					}
-				}
-
-				if (request.publicKey != null && !request.publicKey.isEmpty()) {
-
-					try {
-						request.publicKey = getFileContent(request.publicKey);
-					} catch (IOException e) {
-						System.out.println("Public key file not found.");
-						return;
-					}
-
-					headers.add(new BasicHeader("Category", RequestConstants.PUBLIC_KEY_TERM
-							+ "; scheme=\"" + RequestConstants.CREDENTIALS_RESOURCE_SCHEME
-							+ "\"; class=\"" + RequestConstants.MIXIN_CLASS + "\""));
-					headers.add(new BasicHeader("X-OCCI-Attribute",
-							RequestAttribute.DATA_PUBLIC_KEY.getValue() + "=" + request.publicKey));
+				} else {
+					System.out.println("Resource Storage is required. Types allowed : compute, storage");
+					return;
 				}
 				
-				if (request.requirements != null) {
-					String requirements = Joiner.on(" ").join(request.requirements);
+				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.RESOURCE_KIND
+						.getValue() + "=" + order.resourceKind));							
+				
+				if (order.requirements != null) {
+					String requirements = Joiner.on(" ").join(order.requirements);
 					if (requirements.isEmpty()) {
 						System.out.println("Requirements empty.");
 						jc.usage();
@@ -212,14 +256,14 @@ public class Main {
 							"org.fogbowcloud.request.requirements" + "=" + requirements));
 				}
 				
-				doRequest("post", url + "/" + RequestConstants.TERM, federationToken, headers);
+				doRequest("post", url + "/" + OrderConstants.TERM, authToken, headers);
 			}
 		} else if (parsedCommand.equals("instance")) {
 			String url = instance.url;
 			
-			String federationToken = normalizeTokenFile(instance.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(instance.federationAuthToken);
+			String authToken = normalizeTokenFile(instance.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(instance.authToken);
 			}
 			
 			if (instance.delete && instance.get) {
@@ -228,9 +272,9 @@ public class Main {
 			}
 			if (instance.get) {
 				if (instance.instanceId != null) {
-					doRequest("get", url + "/compute/" + instance.instanceId, federationToken);
+					doRequest("get", url + "/compute/" + instance.instanceId, authToken);
 				} else {
-					doRequest("get", url + "/compute/", federationToken);
+					doRequest("get", url + "/compute/", authToken);
 				}
 			} else if (instance.delete) {
 				if (instance.instanceId == null) {
@@ -238,7 +282,7 @@ public class Main {
 					return;
 				}
 
-				doRequest("delete", url + "/compute/" + instance.instanceId, federationToken);
+				doRequest("delete", url + "/compute/" + instance.instanceId, authToken);
 			} else if (instance.create) {
 				if (instance.delete || instance.get || instance.instanceId != null) {
 					jc.usage();
@@ -246,8 +290,8 @@ public class Main {
 				}
 				
 				List<Header> headers = new LinkedList<Header>();
-				headers.add(new BasicHeader("Category", RequestConstants.COMPUTE_TERM + "; scheme=\""
-						+ RequestConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + RequestConstants.KIND_CLASS
+				headers.add(new BasicHeader("Category", OrderConstants.COMPUTE_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
 						+ "\""));
 								
 				// flavor
@@ -260,7 +304,7 @@ public class Main {
 					
 					headers.add(new BasicHeader("Category", occiFlavorEl.getTerm() + "; scheme=\""
 							+ occiFlavorEl.getScheme() + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));					
+							+ OrderConstants.MIXIN_CLASS + "\""));					
 				}
 				
 				// image
@@ -272,7 +316,7 @@ public class Main {
 				
 				headers.add(new BasicHeader("Category", occiImageEl.getTerm() + "; scheme=\""
 						+ occiImageEl.getScheme() + "\"; class=\""
-						+ RequestConstants.MIXIN_CLASS + "\""));
+						+ OrderConstants.MIXIN_CLASS + "\""));
 				
 				// userdata
 				if (instance.userDataFile != null && !instance.userDataFile.isEmpty()) {
@@ -284,7 +328,7 @@ public class Main {
 						
 						headers.add(new BasicHeader("Category", "user_data" + "; scheme=\""
 								+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
-								+ RequestConstants.MIXIN_CLASS + "\""));
+								+ OrderConstants.MIXIN_CLASS + "\""));
 							
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
 								"org.openstack.compute.user_data=" + userData));						
@@ -306,14 +350,14 @@ public class Main {
 					
 					headers.add(new BasicHeader("Category", "public_key" + "; scheme=\""
 							+ "http://schemas.openstack.org/instance/credentials#" + "\"; class=\""
-							+ RequestConstants.MIXIN_CLASS + "\""));
+							+ OrderConstants.MIXIN_CLASS + "\""));
 
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.data=" + instance.publicKey));
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.name=fogbow"));
 				}
-				doRequest("post", url + "/compute/", federationToken, headers);
+				doRequest("post", url + "/compute/", authToken, headers);
 			}
 		} else if (parsedCommand.equals("token")) {
 			if (token.check) {
@@ -326,35 +370,106 @@ public class Main {
 		} else if (parsedCommand.equals("resource")) {
 			String url = resource.url;
 			
-			String federationToken = normalizeTokenFile(resource.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(resource.federationAuthToken);
+			String authToken = normalizeTokenFile(resource.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(resource.authToken);
 			}
 						
-			doRequest("get", url + "/-/", federationToken);
-		} else if (parsedCommand.equals("usage")) {
-			String url = usage.url;
+			doRequest("get", url + "/-/", authToken);
+		} else if (parsedCommand.equals("storage")) {
+			String url = storage.url;
 			
-			String federationToken = normalizeTokenFile(usage.federationAuthFile);
-			if (federationToken == null) {
-				federationToken = normalizeToken(usage.federationAuthToken);
+			String authToken = normalizeTokenFile(storage.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(storage.authToken);
 			}
 			
-			if (!usage.members && !usage.users) {
-				jc.usage();
-				return;
-			}
-			
-			if (usage.members && usage.users) {
-				doRequest("get", url + "/usage", federationToken);
-			} else if (usage.members) {
-				doRequest("get", url + "/usage/members", federationToken);
-			} else if (usage.users) {
-				doRequest("get", url + "/usage/users", federationToken);
+			if (storage.get) {
+				if (storage.delete) {
+					jc.usage();
+					return;							
+				}	
+				
+				if (storage.storageId == null) {
+					doRequest("get", url + "/" + OrderConstants.STORAGE_TERM, authToken);
+					return;
+				} 
+				doRequest("get", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+			} else if (storage.delete) {
+				if (storage.get) {
+					jc.usage();
+					return;							
+				}
+
+				if (storage.storageId == null) {
+					doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM, authToken);
+					return;
+				} 
+				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
 			} else {
 				jc.usage();
-				return;
-			}
+				return;				
+			}			
+		} else if (parsedCommand.equals("attachment")) {
+			String url = attachment.url;
+			
+			String authToken = normalizeTokenFile(attachment.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(attachment.authToken);
+			}			
+			
+			if (attachment.create) {
+				if (attachment.delete || attachment.get) {
+					jc.usage();
+					return;							
+				}
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", OrderConstants.STORAGELINK_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
+						+ "\""));				
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.SOURCE.getValue() + "=" + attachment.computeId));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.TARGET.getValue() + "=" + attachment.storageId));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.DEVICE_ID.getValue() + "=" + attachment.mountPoint));				
+				
+				doRequest("post", url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/", authToken, headers);				
+			} else if (attachment.delete) {
+				if (attachment.get || attachment.create) {
+					jc.usage();
+					return;							
+				}
+
+				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/" + attachment.id, authToken);		
+			} else if (attachment.get) {
+				if (attachment.create || attachment.delete) {
+					jc.usage();
+					return;							
+				}
+				
+				String endpoint = url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/";
+				if (attachment.id != null) {
+					endpoint += attachment.id;
+				}
+				doRequest("get", endpoint , authToken);									
+			} else {
+				jc.usage();
+				return;	
+			}			
+		} else if (parsedCommand.equals("accounting")) {
+			String url = accounting.url;
+			
+			String authToken = normalizeTokenFile(accounting.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(accounting.authToken);
+			}			
+			
+			doRequest("get", url + "/member/accounting", authToken);
 		}
 	}
 	
@@ -414,13 +529,36 @@ public class Main {
 					properties.put(credEntry.getKey(), credEntry.getValue());
 				}
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
-				try {
-					Token tokenInfo = identityPlugin.getToken(token.token);
-					return tokenInfo.toString();					
-				} catch (Exception e) {
-					// Do Nothing
-				}
 			}
+			
+			try {
+				Token tokenInfo = identityPlugin.getToken(token.token);
+				if (token.accessId == false && token.user == false && token.attributes == false) {
+					return tokenInfo.toString();
+				}
+				
+				String responseStr = "";
+				if (token.accessId ) {
+					responseStr = tokenInfo.getAccessId();
+				}
+				if (token.user) {
+					if (!responseStr.isEmpty()) {
+						responseStr += ",";
+					}
+					responseStr += tokenInfo.getUser();
+				}
+				if (token.attributes) {
+					if (!responseStr.isEmpty()) {
+						responseStr += ",";
+					}
+					responseStr += tokenInfo.getAttributes();
+				}
+				
+				return responseStr;
+			} catch (Exception e) {
+				// Do Nothing
+			}
+			
 		} catch (Exception e) {
 			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
 					+ possibleTypes + ".";
@@ -578,11 +716,11 @@ public class Main {
 		return token.replace("\n", "");
 	}	
 
-	private static void doRequest(String method, String endpoint, String federationToken) throws URISyntaxException, HttpException, IOException {
-		doRequest(method, endpoint, federationToken, new LinkedList<Header>());
+	private static void doRequest(String method, String endpoint, String authToken) throws URISyntaxException, HttpException, IOException {
+		doRequest(method, endpoint, authToken, new LinkedList<Header>());
 	}
 
-	private static void doRequest(String method, String endpoint, String federationToken, 
+	private static void doRequest(String method, String endpoint, String authToken, 
 			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
@@ -593,8 +731,8 @@ public class Main {
 			request = new HttpPost(endpoint);
 		}
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		if (federationToken != null) {
-			request.addHeader(OCCIHeaders.X_FEDERATION_AUTH_TOKEN, federationToken);
+		if (authToken != null) {
+			request.addHeader(OCCIHeaders.X_AUTH_TOKEN, authToken);
 		}
 		for (Header header : additionalHeaders) {
 			request.addHeader(header);
@@ -613,7 +751,7 @@ public class Main {
 		if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
 				|| response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) {
 			Header locationHeader = getLocationHeader(response.getAllHeaders());
-			if (locationHeader != null && locationHeader.getValue().contains(RequestConstants.TERM)) {
+			if (locationHeader != null && locationHeader.getValue().contains(OrderConstants.TERM)) {
 				System.out.println(generateLocationHeaderResponse(locationHeader));
 			} else {
 				System.out.println(EntityUtils.toString(response.getEntity()));
@@ -653,17 +791,23 @@ public class Main {
 	}
 
 	private static class AuthedCommand extends Command {
-		@Parameter(names = "--federation-auth-token", description = "federation auth token")
-		String federationAuthToken = null;
+		@Parameter(names = "--auth-token", description = "auth token")
+		String authToken = null;
 		
-		@Parameter(names = "--federation-auth-file", description = "federation auth file")
-		String federationAuthFile = null;
+		@Parameter(names = "--auth-file", description = "auth file")
+		String authFile = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Members operations")
-	private static class MemberCommand extends Command {
-		@Parameter(names = "--get", description = "List federation members")
-		Boolean get = true;
+	private static class MemberCommand extends AuthedCommand {
+		@Parameter(names = "--quota", description = "Quota")
+		Boolean quota = false;
+		
+		@Parameter(names = "--id", description = "Member Id")
+		String memberId = null;
+					
+		@Parameter(names = "--usage", description = "Usage")
+		Boolean usage = false;		
 	}
 	
 	@Parameters(separators = "=", commandDescription = "Usage consults")
@@ -674,20 +818,25 @@ public class Main {
 		@Parameter(names = "--users", description = "List users' usage")
 		Boolean users = false;
 	}
+	
+	@Parameters(separators = "=", commandDescription = "Accounting consult")
+	private static class AccountingCommand extends AuthedCommand {
+		// There aren't specific commands to this one
+	}
 
-	@Parameters(separators = "=", commandDescription = "Request operations")
-	private static class RequestCommand extends AuthedCommand {
-		@Parameter(names = "--get", description = "Get request")
+	@Parameters(separators = "=", commandDescription = "Order operations")
+	private static class OrderCommand extends AuthedCommand {
+		@Parameter(names = "--get", description = "Get order")
 		Boolean get = false;
 
-		@Parameter(names = "--create", description = "Create request")
+		@Parameter(names = "--create", description = "Create order")
 		Boolean create = false;
 
-		@Parameter(names = "--delete", description = "Delete request")
+		@Parameter(names = "--delete", description = "Delete order")
 		Boolean delete = false;
 
-		@Parameter(names = "--id", description = "Request id")
-		String requestId = null;
+		@Parameter(names = "--id", description = "Order id")
+		String orderId = null;
 
 		@Parameter(names = "--n", description = "Instance count")
 		int instanceCount = Main.DEFAULT_INTANCE_COUNT;
@@ -698,7 +847,7 @@ public class Main {
 		@Parameter(names = "--flavor", description = "Instance flavor")
 		String flavor = null;
 
-		@Parameter(names = "--type", description = "Request type (one-time|persistent)")
+		@Parameter(names = "--type", description = "Order type (one-time|persistent)")
 		String type = Main.DEFAULT_TYPE;
 		
 		@Parameter(names = "--public-key", description = "Public key")
@@ -712,6 +861,12 @@ public class Main {
 		
 		@Parameter(names = "--user-data-file-content-type", description = "Content type of user data file for cloud init")
 		String userDataFileContentType = null;
+		
+		@Parameter(names = "--size", description = "Size instance storage")
+		String size = null;
+		
+		@Parameter(names = "--resource-kind", description = "Resource kind")
+		String resourceKind = null;		
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
@@ -740,6 +895,42 @@ public class Main {
 		@Parameter(names = "--public-key", description = "Public key")
 		String publicKey = null;
 	}
+	
+	@Parameters(separators = "=", commandDescription = "Instance storage operations")
+	private static class StorageCommand extends AuthedCommand {
+		@Parameter(names = "--get", description = "Get instance storage")
+		Boolean get = false;
+
+		@Parameter(names = "--delete", description = "Delete instance storage")
+		Boolean delete = false;	
+
+		@Parameter(names = "--id", description = "Instance storage id")
+		String storageId = null;		
+	}	
+	
+	@Parameters(separators = "=", commandDescription = "Attachment operations")
+	private static class AttachmentCommand extends AuthedCommand {
+		@Parameter(names = "--create", description = "Attachment create")
+		Boolean create = false;
+		
+		@Parameter(names = "--delete", description = "Attachment delete")
+		Boolean delete = false;		
+
+		@Parameter(names = "--get", description = "Get attachment")
+		Boolean get = false;	
+
+		@Parameter(names = "--id", description = "Attachment id")
+		String id = null;
+		
+		@Parameter(names = "--storageId", description = "Storage id attribute")
+		String storageId = null;
+		
+		@Parameter(names = "--computeId", description = "Compute id attribute")
+		String computeId = null;		
+		
+		@Parameter(names = "--mountPoint", description = "Mount point attribute")
+		String mountPoint = null;				
+	}		
 
 	@Parameters(separators = "=", commandDescription = "Token operations")
 	protected static class TokenCommand {
@@ -760,6 +951,15 @@ public class Main {
 		
 		@Parameter(names = "--token", description = "Token Pure")
 		String token = null;			
+		
+		@Parameter(names = "--user", description = "User information")
+		boolean user = false;			
+		
+		@Parameter(names = "--access-id", description = "Access Id information")
+		boolean accessId = false;			
+		
+		@Parameter(names = "--attributes", description = "Attributes information")
+		boolean attributes = false;					
 	}
 
 	@Parameters(separators = "=", commandDescription = "OCCI resources")
