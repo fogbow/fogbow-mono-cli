@@ -228,7 +228,16 @@ public class Main {
 								+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 						headers.add(new BasicHeader("X-OCCI-Attribute",
 								OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
-					}					
+					}
+					
+					if (order.network != null && !order.network.isEmpty()) {
+						headers.add(new BasicHeader("Link", "</" + OrderConstants.NETWORK_TERM 
+								+ "/" + order.network + ">; rel=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME 
+								+ OrderConstants.NETWORK_TERM + "\"; category=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME 
+								+ OrderConstants.NETWORK_INTERFACE_TERM + "\";"));
+					}
+					
+					
 				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
 					if (order.size != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
@@ -866,7 +875,10 @@ public class Main {
 		String size = null;
 		
 		@Parameter(names = "--resource-kind", description = "Resource kind")
-		String resourceKind = null;		
+		String resourceKind = null;
+		
+		@Parameter(names = "--network", description = "Network id")
+		String network = null;
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
