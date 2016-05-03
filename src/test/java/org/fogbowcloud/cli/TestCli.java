@@ -27,6 +27,7 @@ import org.apache.http.message.BasicStatusLine;
 import org.fogbowcloud.cli.Main.TokenCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
+import org.fogbowcloud.manager.occi.OCCIConstants;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
@@ -180,6 +181,106 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithResourceKindNetwork() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+		String cird = "10.10.10.10/24";
+		String allocation = OCCIConstants.NetworkAllocation.DYNAMIC.getValue();
+		String gateway = "10.10.10.11";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", OrderConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + cird);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
+				+  " --resource-kind " + OrderConstants.NETWORK_TERM + " --cidr " + cird
+				+ " --gateway " + gateway + " --allocation " + OCCIConstants.NetworkAllocation.DYNAMIC.getValue();
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}	
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithResourceKindNetworkWithoutAttributes() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", OrderConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
+				+  " --resource-kind " + OrderConstants.NETWORK_TERM;
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}		
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandPostOrderWithResourceKindNetworkWithWrongAllocation() throws Exception {
+		final String intanceCount = "2";
+		final String requirements = "X>=1&&Y=2";
+		String cird = "10.10.10.10/24";
+		String allocation = OCCIConstants.NetworkAllocation.DYNAMIC.getValue();
+		String gateway = "10.10.10.11";
+
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader("Category", OrderConstants.TERM
+				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ intanceCount);
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
+		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + cird);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
+				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
+				+  " --resource-kind " + OrderConstants.NETWORK_TERM + " --allocation " + "wrong";
+
+		cli.main(createArgs(command));
+
+		Mockito.verify(client, Mockito.times(0)).execute(Mockito.any(HttpUriRequest.class));
+	}		
 	
 	@SuppressWarnings("static-access")
 	@Test
@@ -583,54 +684,6 @@ public class TestCli {
 	
 	@SuppressWarnings("static-access")
 	@Test
-	public void commandGetMembersUsage() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/members");
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		expectedRequest = new HttpUriRequestMatcher(request);
-
-		String command = "usage --members --url " + Main.DEFAULT_URL
-				+ " --auth-token " + ACCESS_TOKEN_ID;
-
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}
-	
-	@SuppressWarnings("static-access")
-	@Test
-	public void commandGetUsersUsage() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage/users");
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "usage --users --url " + Main.DEFAULT_URL
-				+ " --auth-token " + ACCESS_TOKEN_ID;
-
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}
-	
-	@SuppressWarnings("static-access")
-	@Test
-	public void commandGetMembersAndUsersUsage() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/usage");
-		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "usage --users --members --url " + Main.DEFAULT_URL
-				+ " --auth-token " + ACCESS_TOKEN_ID;
-
-		cli.main(createArgs(command));
-
-		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}
-	
-	@SuppressWarnings("static-access")
-	@Test
 	public void commandPostAttachment() throws Exception {
 		final String source = "source";
 		final String target = "target";
@@ -789,6 +842,50 @@ public class TestCli {
 		
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(accessId + "," + user, responseStr);
+	}	
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetNetworks() throws Exception {
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/");
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "network --get --auth-token " + ACCESS_TOKEN_ID;
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandGetSpecificNetwork() throws Exception {
+		String networkId = "networkId00";
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "network --get --auth-token " + ACCESS_TOKEN_ID + " --id " + networkId;
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
+	}			
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void commandDeleteSpecificNetwork() throws Exception {
+		String networkId = "networkId00";
+		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
+		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		expectedRequest = new HttpUriRequestMatcher(request);
+
+		String command = "network --delete --auth-token " + ACCESS_TOKEN_ID + " --id " + networkId;
+		cli.main(createArgs(command));
+
+		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}		
 	
 	private String[] createArgs(String command) throws Exception {

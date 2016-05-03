@@ -39,6 +39,8 @@ import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.UserdataUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
+import org.fogbowcloud.manager.occi.OCCIConstants;
+import org.fogbowcloud.manager.occi.OCCIConstants.NetworkAllocation;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
@@ -92,6 +94,8 @@ public class Main {
 		jc.addCommand("resource", resource);
         StorageCommand storage = new StorageCommand();
         jc.addCommand("storage", storage);
+        NetworkCommand network = new NetworkCommand();
+        jc.addCommand("network", network);        
         AttachmentCommand attachment = new AttachmentCommand();
         jc.addCommand("attachment", attachment);
         AccountingCommand accounting = new AccountingCommand();
@@ -236,8 +240,7 @@ public class Main {
 								+ OrderConstants.NETWORK_TERM + "\"; category=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME 
 								+ OrderConstants.NETWORK_INTERFACE_TERM + "\";"));
 					}
-					
-					
+						
 				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
 					if (order.size != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute", 
@@ -246,8 +249,25 @@ public class Main {
 						System.out.println("Size is required when resoure kind is storage");
 						return;
 					}
+				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.NETWORK_TERM)) {
+					if (order.cidr != null) {
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								OCCIConstants.NETWORK_ADDRESS + "=" + order.cidr));						
+					}
+					if (order.gateway != null) {
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								OCCIConstants.NETWORK_GATEWAY + "=" + order.gateway));						
+					}				
+					if (order.allocation != null) {
+						if (!isValidAllocation(order.allocation)) {
+							System.out.println("Allocation is not valid. Types allowed : dynamic, static");
+							return;							
+						}
+						headers.add(new BasicHeader("X-OCCI-Attribute", 
+								OCCIConstants.NETWORK_ALLOCATION + "=" + order.allocation));						
+					}	
 				} else {
-					System.out.println("Resource Storage is required. Types allowed : compute, storage");
+					System.out.println("Resource Storage is required. Types allowed : compute, storage, network");
 					return;
 				}
 				
@@ -479,7 +499,50 @@ public class Main {
 			}			
 			
 			doRequest("get", url + "/member/accounting", authToken);
+		} else if (parsedCommand.equals("network")) {
+			String url = network.url;
+			
+			String authToken = normalizeTokenFile(network.authFile);
+			if (authToken == null) {
+				authToken = normalizeToken(network.authToken);
+			}
+			
+			if (network.get) {
+				if (network.delete) {
+					jc.usage();
+					return;							
+				}	
+				
+				if (network.networkId == null) {
+					doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken);
+					return;
+				} 
+				doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
+			} else if (network.delete) {
+				if (network.get) {
+					jc.usage();
+					return;							
+				}
+
+				if (network.networkId == null) {
+					doRequest("delete", url + "/" + OrderConstants.NETWORK_TERM, authToken);
+					return;
+				} 
+				doRequest("delete", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
+			} else {
+				jc.usage();
+				return;				
+			}			
 		}
+	}
+
+	private static boolean isValidAllocation(String allocation) {
+		for (NetworkAllocation networkAllocation : OCCIConstants.NetworkAllocation.values()) {
+			if (allocation.equals(networkAllocation.getValue())) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	private static void configureLog4j() {
@@ -879,6 +942,15 @@ public class Main {
 		
 		@Parameter(names = "--network", description = "Network id")
 		String network = null;
+		
+		@Parameter(names = "--cidr", description = "CIDR")
+		String cidr = null;
+		
+		@Parameter(names = "--gateway", description = "Gateway")
+		String gateway = null;
+		
+		@Parameter(names = "--allocation", description = "Allocation (dynamicy or static)")
+		String allocation = null;		
 	}
 
 	@Parameters(separators = "=", commandDescription = "Instance operations")
@@ -918,6 +990,18 @@ public class Main {
 
 		@Parameter(names = "--id", description = "Instance storage id")
 		String storageId = null;		
+	}
+	
+	@Parameters(separators = "=", commandDescription = "Instance network operations")
+	private static class NetworkCommand extends AuthedCommand {
+		@Parameter(names = "--get", description = "Get instance network")
+		Boolean get = false;
+
+		@Parameter(names = "--delete", description = "Delete instance network")
+		Boolean delete = false;	
+
+		@Parameter(names = "--id", description = "Instance network id")
+		String networkId = null;
 	}	
 	
 	@Parameters(separators = "=", commandDescription = "Attachment operations")
