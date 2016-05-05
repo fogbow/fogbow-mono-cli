@@ -512,12 +512,52 @@ public class Main {
 					jc.usage();
 					return;							
 				}	
+				if (network.create) {
+					jc.usage();
+					return;							
+				}	
 				
 				if (network.networkId == null) {
 					doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken);
 					return;
 				} 
 				doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
+			}else if (network.create) {
+				if (network.delete) {
+					jc.usage();
+					return;							
+				}
+				if (network.get) {
+					jc.usage();
+					return;							
+				}
+				if (network.cidr == null) {
+					jc.usage();
+					return;	
+				} 
+				if (network.gateway == null) {
+					jc.usage();
+					return;	
+				} 
+				if (network.allocation == null) {
+					jc.usage();
+					return;	
+				} 
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", OrderConstants.NETWORK_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
+						+ "\""));				
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OCCIConstants.NETWORK_ADDRESS + "=" + network.cidr));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OCCIConstants.NETWORK_GATEWAY + "=" + network.gateway));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OCCIConstants.NETWORK_ALLOCATION + "=" + network.allocation));	
+				
+				doRequest("post", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken, headers);
+				return;
+				
 			} else if (network.delete) {
 				if (network.get) {
 					jc.usage();
@@ -826,7 +866,11 @@ public class Main {
 			if (locationHeader != null && locationHeader.getValue().contains(OrderConstants.TERM)) {
 				System.out.println(generateLocationHeaderResponse(locationHeader));
 			} else {
-				System.out.println(EntityUtils.toString(response.getEntity()));
+				if (method.equals("post")){
+					System.out.println(generateLocationHeaderResponse(locationHeader));
+				}else{
+					System.out.println(EntityUtils.toString(response.getEntity()));
+				}
 			}
 		} else {
 			System.out.println(response.getStatusLine().toString());
@@ -957,7 +1001,7 @@ public class Main {
 	private static class InstanceCommand extends AuthedCommand {
 		@Parameter(names = "--get", description = "Get instance data")
 		Boolean get = false;
-
+		
 		@Parameter(names = "--delete", description = "Delete instance")
 		Boolean delete = false;
 		
@@ -997,11 +1041,23 @@ public class Main {
 		@Parameter(names = "--get", description = "Get instance network")
 		Boolean get = false;
 
+		@Parameter(names = "--create", description = "Post new network instance")
+		Boolean create = false;
+		
 		@Parameter(names = "--delete", description = "Delete instance network")
 		Boolean delete = false;	
 
 		@Parameter(names = "--id", description = "Instance network id")
 		String networkId = null;
+		
+		@Parameter(names = "--cidr", description = "CIDR")
+		String cidr = null;
+		
+		@Parameter(names = "--gateway", description = "Gateway")
+		String gateway = null;
+		
+		@Parameter(names = "--allocation", description = "Allocation (dynamicy or static)")
+		String allocation = null;	
 	}	
 	
 	@Parameters(separators = "=", commandDescription = "Attachment operations")
