@@ -406,6 +406,21 @@ public class Main {
 					return;
 				} 
 				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+			} else if (storage.create){
+				if (attachment.delete || attachment.get) {
+					jc.usage();
+					return;							
+				}
+				
+				List<Header> headers = new LinkedList<Header>();
+				headers.add(new BasicHeader("Category", OrderConstants.STORAGELINK_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS
+						+ "\""));			
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.SIZE.getValue() + "=" + storage.size));
+				doRequest("post", url + "/" + OrderConstants.STORAGE_TERM + "/" 
+						+ OrderConstants.STORAGE_LINK_TERM + "/", authToken, headers);			
+
 			} else {
 				jc.usage();
 				return;				
@@ -898,6 +913,10 @@ public class Main {
 	
 	@Parameters(separators = "=", commandDescription = "Instance storage operations")
 	private static class StorageCommand extends AuthedCommand {
+	
+		@Parameter(names = "--create", description = "Create instance storage")
+		Boolean create = false;
+
 		@Parameter(names = "--get", description = "Get instance storage")
 		Boolean get = false;
 
@@ -905,7 +924,10 @@ public class Main {
 		Boolean delete = false;	
 
 		@Parameter(names = "--id", description = "Instance storage id")
-		String storageId = null;		
+		String storageId = null;
+		
+		@Parameter(names = "--size", description = "Size instance storage")
+		String size = null;
 	}	
 	
 	@Parameters(separators = "=", commandDescription = "Attachment operations")
