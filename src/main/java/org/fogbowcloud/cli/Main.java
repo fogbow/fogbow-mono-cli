@@ -407,6 +407,7 @@ public class Main {
 				} 
 				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
 			} else if (storage.create){
+				//FIXME: check if the JCommander has a way to set exclusive parameters
 				if (storage.delete || storage.get) {
 					jc.usage();
 					return;							
