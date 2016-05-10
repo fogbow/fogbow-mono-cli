@@ -508,11 +508,7 @@ public class Main {
 			}
 			
 			if (network.get) {
-				if (network.delete) {
-					jc.usage();
-					return;							
-				}	
-				if (network.create) {
+				if (network.delete || network.create) {
 					jc.usage();
 					return;							
 				}	
@@ -523,23 +519,14 @@ public class Main {
 				} 
 				doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
 			}else if (network.create) {
-				if (network.delete) {
+				if (network.delete || network.get) {
 					jc.usage();
 					return;							
 				}
-				if (network.get) {
-					jc.usage();
-					return;							
-				}
-				if (network.cidr == null) {
-					jc.usage();
-					return;	
-				} 
-				if (network.gateway == null) {
-					jc.usage();
-					return;	
-				} 
-				if (network.allocation == null) {
+				
+				if (network.cidr == null 
+						|| network.gateway == null 
+						|| network.allocation == null) {
 					jc.usage();
 					return;	
 				} 
