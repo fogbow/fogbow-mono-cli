@@ -267,7 +267,7 @@ public class Main {
 								OCCIConstants.NETWORK_ALLOCATION + "=" + order.allocation));						
 					}	
 				} else {
-					System.out.println("Resource Storage is required. Types allowed : compute, storage, network");
+					System.out.println("Resource Kind is required. Types allowed : compute, storage, network");
 					return;
 				}
 				
