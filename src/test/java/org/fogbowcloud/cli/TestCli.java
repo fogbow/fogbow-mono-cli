@@ -71,7 +71,7 @@ public class TestCli {
 	public void commandGetToken() throws Exception {
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		String accessId = "AccessId";
-		Token token = new Token(accessId , "user", null, null);
+		Token token = new Token(accessId , new Token.User("user", "user"), null, null);
 		Mockito.when(identityPlugin.createToken(Mockito.anyMap())).thenReturn(token);
 		
 		TokenCommand tokenCommand = new TokenCommand();
@@ -774,7 +774,7 @@ public class TestCli {
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		
 		HashMap<String, String> attributes = new HashMap<String, String>();
-		Token token = new Token("accessId", "user", new Date(), attributes);
+		Token token = new Token("accessId", new Token.User("user", "user"), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
 		
@@ -787,13 +787,13 @@ public class TestCli {
 	public void testGetTokenInfoOnlyResponseWithAttributeUser() {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
-		tokenCommand.user = true;
+		tokenCommand.userName = true;
 		
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		String user = "user";
-		Token token = new Token("accessId", user, new Date(), attributes);
+		Token token = new Token("accessId", new Token.User(user, user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
 		
@@ -814,7 +814,7 @@ public class TestCli {
 		attributes.put("x", "y");
 		String user = "user";
 		String accessId = "accessId";
-		Token token = new Token(accessId, user, new Date(), attributes);
+		Token token = new Token(accessId, new Token.User(user, user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
 		
@@ -828,7 +828,7 @@ public class TestCli {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
 		tokenCommand.accessId = true;
-		tokenCommand.user = true;
+		tokenCommand.userName = true;
 		
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		
@@ -836,7 +836,7 @@ public class TestCli {
 		attributes.put("x", "y");
 		String user = "user";
 		String accessId = "accessId";
-		Token token = new Token(accessId, user, new Date(), attributes);
+		Token token = new Token(accessId, new Token.User(user, user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
 		
