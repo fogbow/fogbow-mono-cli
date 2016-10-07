@@ -282,7 +282,7 @@ public class Main {
 						return;
 					}
 					headers.add(new BasicHeader("X-OCCI-Attribute",
-							"org.fogbowcloud.request.requirements" + "=" + requirements));
+							OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements));
 				}
 				
 				doRequest("post", url + "/" + OrderConstants.TERM, authToken, headers);

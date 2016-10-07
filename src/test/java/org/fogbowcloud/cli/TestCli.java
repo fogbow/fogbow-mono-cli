@@ -108,11 +108,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
 		request.addHeader("Category", image
@@ -160,11 +160,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
 				OrderAttribute.STORAGE_SIZE.getValue() + "=" + size);				
@@ -194,11 +194,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
@@ -227,11 +227,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME +"\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
 				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
@@ -259,11 +259,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME +"\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
@@ -317,11 +317,11 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "="
 				+ new String(Base64.encodeBase64(userDataContent.getBytes())));
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);		
@@ -354,10 +354,10 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"http://schemas.fogbowcloud.org/request#\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ intanceCount);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
 		request.addHeader("Category", image
@@ -384,10 +384,10 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader("Category", OrderConstants.TERM + "; scheme=\""
 				+ OrderConstants.SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS + "\"");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.instance-count="
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
 				+ Main.DEFAULT_INTANCE_COUNT);
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.type=one-time");
-		request.addHeader("X-OCCI-Attribute", "org.fogbowcloud.request.requirements=" + requirements);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader("Category", Main.DEFAULT_IMAGE + "; scheme=\""
 				+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
 				+ OrderConstants.MIXIN_CLASS + "\"");
