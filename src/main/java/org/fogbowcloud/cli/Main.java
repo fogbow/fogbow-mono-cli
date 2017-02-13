@@ -653,7 +653,7 @@ public class Main {
 			
 			try {
 				Token tokenInfo = identityPlugin.getToken(token.token);
-				if (token.accessId == false && token.userName == false && token.attributes == false) {
+				if (token.accessId == false && token.userName == false && token.attributes == false && token.userId == false) {
 					return tokenInfo.toString();
 				}
 				
@@ -667,6 +667,12 @@ public class Main {
 					}
 					responseStr += tokenInfo.getUser().getName();
 				}
+				if (token.userId) {
+					if (!responseStr.isEmpty()) {
+						responseStr += ",";
+					}
+					responseStr += tokenInfo.getUser().getId();
+				}				
 				if (token.attributes) {
 					if (!responseStr.isEmpty()) {
 						responseStr += ",";
@@ -1119,8 +1125,11 @@ public class Main {
 		@Parameter(names = "--token", description = "Token Pure")
 		String token = null;			
 		
-		@Parameter(names = "--user", description = "User information")
-		boolean userName = false;			
+		@Parameter(names = "--user", description = "User name")
+		boolean userName = false;		
+		
+		@Parameter(names = "--user-id", description = "User id")
+		boolean userId = false;				
 		
 		@Parameter(names = "--access-id", description = "Access Id information")
 		boolean accessId = false;			

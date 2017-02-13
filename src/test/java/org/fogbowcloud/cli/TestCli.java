@@ -784,7 +784,7 @@ public class TestCli {
 	
 	@SuppressWarnings("static-access")
 	@Test
-	public void testGetTokenInfoOnlyResponseWithAttributeUser() {
+	public void testGetTokenInfoOnlyResponseWithAttributeUserName() {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
 		tokenCommand.userName = true;
@@ -793,13 +793,54 @@ public class TestCli {
 		
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		String user = "user";
-		Token token = new Token("accessId", new Token.User(user, user), new Date(), attributes);
+		Token token = new Token("accessId", new Token.User("userId", user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
 		
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(user, responseStr);
 	}
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void testGetTokenInfoOnlyResponseWithAttributeUserId() {
+		TokenCommand tokenCommand = new TokenCommand();
+		tokenCommand.type = "openstack";
+		tokenCommand.userId = true;
+		
+		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
+		
+		HashMap<String, String> attributes = new HashMap<String, String>();
+		String username = "user";
+		String userId = "userId";
+		Token token = new Token("accessId", new Token.User(userId, username), new Date(), attributes);
+		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
+		cli.setIdentityPlugin(identityPlugin);
+		
+		String responseStr = cli.getTokenInfo(tokenCommand);
+		Assert.assertEquals(userId, responseStr);
+	}	
+	
+	@SuppressWarnings("static-access")
+	@Test
+	public void testGetTokenInfoOnlyResponseWithAttributeFullUser() {
+		TokenCommand tokenCommand = new TokenCommand();
+		tokenCommand.type = "openstack";
+		tokenCommand.userId = true;
+		tokenCommand.userName = true;
+		
+		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
+		
+		HashMap<String, String> attributes = new HashMap<String, String>();
+		String username = "user";
+		String userId = "userId";
+		Token token = new Token("accessId", new Token.User(userId, username), new Date(), attributes);
+		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
+		cli.setIdentityPlugin(identityPlugin);
+		
+		String responseStr = cli.getTokenInfo(tokenCommand);
+		Assert.assertEquals(username + "," + userId, responseStr);
+	}		
 	
 	@SuppressWarnings("static-access")
 	@Test
