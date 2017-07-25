@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Set;
 
@@ -42,6 +44,9 @@ import org.mockito.Mockito;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
+
+import com.sun.xml.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
+import com.sun.xml.bind.v2.schemagen.xmlschema.List;
 
 public class TestCli {
 
@@ -928,6 +933,39 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}		
+	
+	@Test
+	public void testTokenCommandCredentialNeeds() throws Exception {
+
+		TokenCommand token = new TokenCommand();
+
+		LinkedList<String> types = (LinkedList<String>) Main.getNamePossiblePluginTypes();
+
+		ArrayList<String> typesNeedPass = new ArrayList<String>() {
+			private static final long serialVersionUID = 1L;
+			{
+				add("openstackv2");
+				add("ldap");
+				add("opennebula");
+				add("openstack");
+				add("voms");
+			}
+		};
+
+		for (String type : types) {
+			token.type = type;
+			if (typesNeedPass.contains(type))
+				Assert.assertEquals(true, token.credentialsNeeds("password"));
+			else
+				Assert.assertEquals(false, token.credentialsNeeds("password"));
+		}
+
+		Assert.assertEquals(false, token.hasPassword());
+
+		token.putPasswordAtCredentials("teste");
+
+		Assert.assertEquals(true, token.hasPassword());
+	}
 	
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
