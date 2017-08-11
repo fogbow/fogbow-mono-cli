@@ -133,9 +133,11 @@ public class Main {
 				}
 
 				if (member.quota) {
-					doRequest("get", url + "/member/" + member.memberId + "/quota", federationToken);
+					doRequest("get", url + "/member/" + member.memberId + "/quota",
+							federationToken);
 				} else if (member.usage) {
-					doRequest("get", url + "/member/" + member.memberId + "/usage", federationToken);
+					doRequest("get", url + "/member/" + member.memberId + "/usage",
+							federationToken);
 				} else {
 					jc.usage();
 					return;
@@ -157,7 +159,8 @@ public class Main {
 					return;
 				}
 				if (order.orderId != null) {
-					doRequest("get", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
+					doRequest("get", url + "/" + OrderConstants.TERM + "/" + order.orderId,
+							authToken);
 				} else {
 					doRequest("get", url + "/" + OrderConstants.TERM, authToken);
 				}
@@ -166,7 +169,8 @@ public class Main {
 					jc.usage();
 					return;
 				}
-				doRequest("delete", url + "/" + OrderConstants.TERM + "/" + order.orderId, authToken);
+				doRequest("delete", url + "/" + OrderConstants.TERM + "/" + order.orderId,
+						authToken);
 			} else if (order.create) {
 				if (order.delete || order.get || order.orderId != null) {
 					jc.usage();
@@ -179,32 +183,40 @@ public class Main {
 				}
 
 				List<Header> headers = new LinkedList<Header>();
-				headers.add(new BasicHeader("Category", OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME
-						+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\""));
+				headers.add(new BasicHeader("Category",
+						OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\""
+								+ OrderConstants.KIND_CLASS + "\""));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						OrderAttribute.INSTANCE_COUNT.getValue() + "=" + order.instanceCount));
-				headers.add(new BasicHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=" + order.type));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OrderAttribute.TYPE.getValue() + "=" + order.type));
 
-				if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.COMPUTE_TERM)) {
+				if (order.resourceKind != null
+						&& order.resourceKind.equals(OrderConstants.COMPUTE_TERM)) {
 					if (order.flavor != null && !order.flavor.isEmpty()) {
 						headers.add(new BasicHeader("Category",
-								order.flavor + "; scheme=\"" + OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
+								order.flavor + "; scheme=\""
+										+ OrderConstants.TEMPLATE_RESOURCE_SCHEME + "\"; class=\""
 										+ OrderConstants.MIXIN_CLASS + "\""));
 					}
-					headers.add(new BasicHeader("Category", order.image + "; scheme=\""
-							+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
+					headers.add(new BasicHeader("Category",
+							order.image + "; scheme=\"" + OrderConstants.TEMPLATE_OS_SCHEME
+									+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 
 					if (order.userDataFile != null && !order.userDataFile.isEmpty()) {
-						if (order.userDataFileContentType == null || order.userDataFileContentType.isEmpty()) {
+						if (order.userDataFileContentType == null
+								|| order.userDataFileContentType.isEmpty()) {
 							System.out.println("Content type of user data file cannot be empty.");
 							return;
 						}
 						try {
 							String userDataContent = getFileContent(order.userDataFile);
-							String userData = userDataContent.replace("\n", UserdataUtils.USER_DATA_LINE_BREAKER);
+							String userData = userDataContent.replace("\n",
+									UserdataUtils.USER_DATA_LINE_BREAKER);
 							userData = new String(Base64.encodeBase64(userData.getBytes()));
 							headers.add(new BasicHeader("X-OCCI-Attribute",
-									OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "=" + userData));
+									OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "="
+											+ userData));
 							headers.add(new BasicHeader("X-OCCI-Attribute",
 									OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "="
 											+ order.userDataFileContentType));
@@ -225,21 +237,23 @@ public class Main {
 
 						headers.add(new BasicHeader("Category",
 								OrderConstants.PUBLIC_KEY_TERM + "; scheme=\""
-										+ OrderConstants.CREDENTIALS_RESOURCE_SCHEME + "\"; class=\""
-										+ OrderConstants.MIXIN_CLASS + "\""));
+										+ OrderConstants.CREDENTIALS_RESOURCE_SCHEME
+										+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 						headers.add(new BasicHeader("X-OCCI-Attribute",
 								OrderAttribute.DATA_PUBLIC_KEY.getValue() + "=" + order.publicKey));
 					}
 
 					if (order.network != null && !order.network.isEmpty()) {
 						headers.add(new BasicHeader("Link",
-								"</" + OrderConstants.NETWORK_TERM + "/" + order.network + ">; rel=\""
-										+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + OrderConstants.NETWORK_TERM
-										+ "\"; category=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
+								"</" + OrderConstants.NETWORK_TERM + "/" + order.network
+										+ ">; rel=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
+										+ OrderConstants.NETWORK_TERM + "\"; category=\""
+										+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
 										+ OrderConstants.NETWORK_INTERFACE_TERM + "\";"));
 					}
 
-				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
+				} else if (order.resourceKind != null
+						&& order.resourceKind.equals(OrderConstants.STORAGE_TERM)) {
 					if (order.size != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute",
 								OrderAttribute.STORAGE_SIZE.getValue() + "=" + order.size));
@@ -247,10 +261,11 @@ public class Main {
 						System.out.println("Size is required when resoure kind is storage");
 						return;
 					}
-				} else if (order.resourceKind != null && order.resourceKind.equals(OrderConstants.NETWORK_TERM)) {
+				} else if (order.resourceKind != null
+						&& order.resourceKind.equals(OrderConstants.NETWORK_TERM)) {
 					if (order.cidr != null) {
-						headers.add(
-								new BasicHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + order.cidr));
+						headers.add(new BasicHeader("X-OCCI-Attribute",
+								OCCIConstants.NETWORK_ADDRESS + "=" + order.cidr));
 					}
 					if (order.gateway != null) {
 						headers.add(new BasicHeader("X-OCCI-Attribute",
@@ -258,14 +273,16 @@ public class Main {
 					}
 					if (order.allocation != null) {
 						if (!isValidAllocation(order.allocation)) {
-							System.out.println("Allocation is not valid. Types allowed : dynamic, static");
+							System.out.println(
+									"Allocation is not valid. Types allowed : dynamic, static");
 							return;
 						}
 						headers.add(new BasicHeader("X-OCCI-Attribute",
 								OCCIConstants.NETWORK_ALLOCATION + "=" + order.allocation));
 					}
 				} else {
-					System.out.println("Resource Kind is required. Types allowed : compute, storage, network");
+					System.out.println(
+							"Resource Kind is required. Types allowed : compute, storage, network");
 					return;
 				}
 
@@ -318,8 +335,9 @@ public class Main {
 
 				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category",
-						OrderConstants.COMPUTE_TERM + "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
-								+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\""));
+						OrderConstants.COMPUTE_TERM + "; scheme=\""
+								+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+								+ OrderConstants.KIND_CLASS + "\""));
 
 				// flavor
 				if (instance.flavor != null && !instance.flavor.isEmpty()) {
@@ -329,8 +347,9 @@ public class Main {
 						return;
 					}
 
-					headers.add(new BasicHeader("Category", occiFlavorEl.getTerm() + "; scheme=\""
-							+ occiFlavorEl.getScheme() + "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
+					headers.add(new BasicHeader("Category",
+							occiFlavorEl.getTerm() + "; scheme=\"" + occiFlavorEl.getScheme()
+									+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 				}
 
 				// image
@@ -340,21 +359,25 @@ public class Main {
 					return;
 				}
 
-				headers.add(new BasicHeader("Category", occiImageEl.getTerm() + "; scheme=\"" + occiImageEl.getScheme()
-						+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
+				headers.add(new BasicHeader("Category",
+						occiImageEl.getTerm() + "; scheme=\"" + occiImageEl.getScheme()
+								+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 
 				// userdata
 				if (instance.userDataFile != null && !instance.userDataFile.isEmpty()) {
 					try {
 						String userDataContent = getFileContent(instance.userDataFile);
-						String userData = userDataContent.replace("\n", UserdataUtils.USER_DATA_LINE_BREAKER);
+						String userData = userDataContent.replace("\n",
+								UserdataUtils.USER_DATA_LINE_BREAKER);
 						userData = new String(Base64.encodeBase64(userData.getBytes()));
 
 						headers.add(new BasicHeader("Category",
-								"user_data" + "; scheme=\"" + "http://schemas.openstack.org/compute/instance#"
+								"user_data" + "; scheme=\""
+										+ "http://schemas.openstack.org/compute/instance#"
 										+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 
-						headers.add(new BasicHeader("X-OCCI-Attribute", "org.openstack.compute.user_data=" + userData));
+						headers.add(new BasicHeader("X-OCCI-Attribute",
+								"org.openstack.compute.user_data=" + userData));
 					} catch (IOException e) {
 						System.out.println("User data file not found.");
 						return;
@@ -372,19 +395,21 @@ public class Main {
 					}
 
 					headers.add(new BasicHeader("Category",
-							"public_key" + "; scheme=\"" + "http://schemas.openstack.org/instance/credentials#"
+							"public_key" + "; scheme=\""
+									+ "http://schemas.openstack.org/instance/credentials#"
 									+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\""));
 
 					headers.add(new BasicHeader("X-OCCI-Attribute",
 							"org.openstack.credentials.publickey.data=" + instance.publicKey));
-					headers.add(new BasicHeader("X-OCCI-Attribute", "org.openstack.credentials.publickey.name=fogbow"));
+					headers.add(new BasicHeader("X-OCCI-Attribute",
+							"org.openstack.credentials.publickey.name=fogbow"));
 				}
 				doRequest("post", url + "/compute/", authToken, headers);
 			}
 		} else if (parsedCommand.equals("token")) {
-			
+
 			token.addPossibleMissingCredentials();
-			
+
 			if (token.check) {
 				System.out.println(checkToken(token));
 			} else if (token.info) {
@@ -419,7 +444,8 @@ public class Main {
 					doRequest("get", url + "/" + OrderConstants.STORAGE_TERM, authToken);
 					return;
 				}
-				doRequest("get", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+				doRequest("get", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId,
+						authToken);
 			} else if (storage.delete) {
 				if (storage.get) {
 					jc.usage();
@@ -430,7 +456,9 @@ public class Main {
 					doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM, authToken);
 					return;
 				}
-				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId, authToken);
+				doRequest("delete",
+						url + "/" + OrderConstants.STORAGE_TERM + "/" + storage.storageId,
+						authToken);
 			} else if (storage.create) {
 				// FIXME: check if the JCommander has a way to set exclusive parameters
 				if (storage.delete || storage.get) {
@@ -440,15 +468,17 @@ public class Main {
 
 				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category",
-						OrderConstants.STORAGE_TERM + "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
-								+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\""));
+						OrderConstants.STORAGE_TERM + "; scheme=\""
+								+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+								+ OrderConstants.KIND_CLASS + "\""));
 
 				if (storage.size == null || storage.size.isEmpty()) {
 					jc.usage();
 					return;
 				}
 
-				headers.add(new BasicHeader("X-OCCI-Attribute", StorageAttribute.SIZE.getValue() + "=" + storage.size));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						StorageAttribute.SIZE.getValue() + "=" + storage.size));
 
 				doRequest("post", url + "/" + OrderConstants.STORAGE_TERM, authToken, headers);
 			} else {
@@ -471,8 +501,9 @@ public class Main {
 
 				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category",
-						OrderConstants.STORAGELINK_TERM + "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
-								+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\""));
+						OrderConstants.STORAGELINK_TERM + "; scheme=\""
+								+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+								+ OrderConstants.KIND_CLASS + "\""));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						StorageAttribute.SOURCE.getValue() + "=" + attachment.computeId));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
@@ -480,25 +511,26 @@ public class Main {
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						StorageAttribute.DEVICE_ID.getValue() + "=" + attachment.mountPoint));
 
-				doRequest("post",
-						url + "/" + OrderConstants.STORAGE_TERM + "/" + OrderConstants.STORAGE_LINK_TERM + "/",
-						authToken, headers);
+				doRequest("post", url + "/" + OrderConstants.STORAGE_TERM + "/"
+						+ OrderConstants.STORAGE_LINK_TERM + "/", authToken, headers);
 			} else if (attachment.delete) {
 				if (attachment.get || attachment.create) {
 					jc.usage();
 					return;
 				}
 
-				doRequest("delete", url + "/" + OrderConstants.STORAGE_TERM + "/" + OrderConstants.STORAGE_LINK_TERM
-						+ "/" + attachment.id, authToken);
+				doRequest("delete",
+						url + "/" + OrderConstants.STORAGE_TERM + "/"
+								+ OrderConstants.STORAGE_LINK_TERM + "/" + attachment.id,
+						authToken);
 			} else if (attachment.get) {
 				if (attachment.create || attachment.delete) {
 					jc.usage();
 					return;
 				}
 
-				String endpoint = url + "/" + OrderConstants.STORAGE_TERM + "/" + OrderConstants.STORAGE_LINK_TERM
-						+ "/";
+				String endpoint = url + "/" + OrderConstants.STORAGE_TERM + "/"
+						+ OrderConstants.STORAGE_LINK_TERM + "/";
 				if (attachment.id != null) {
 					endpoint += attachment.id;
 				}
@@ -534,7 +566,8 @@ public class Main {
 					doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken);
 					return;
 				}
-				doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
+				doRequest("get", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId,
+						authToken);
 			} else if (network.create) {
 				if (network.delete || network.get) {
 					jc.usage();
@@ -548,14 +581,18 @@ public class Main {
 
 				List<Header> headers = new LinkedList<Header>();
 				headers.add(new BasicHeader("Category",
-						OrderConstants.NETWORK_TERM + "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME
-								+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\""));
-				headers.add(new BasicHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + network.cidr));
-				headers.add(new BasicHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + network.gateway));
+						OrderConstants.NETWORK_TERM + "; scheme=\""
+								+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+								+ OrderConstants.KIND_CLASS + "\""));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OCCIConstants.NETWORK_ADDRESS + "=" + network.cidr));
+				headers.add(new BasicHeader("X-OCCI-Attribute",
+						OCCIConstants.NETWORK_GATEWAY + "=" + network.gateway));
 				headers.add(new BasicHeader("X-OCCI-Attribute",
 						OCCIConstants.NETWORK_ALLOCATION + "=" + network.allocation));
 
-				doRequest("post", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken, headers);
+				doRequest("post", url + "/" + OrderConstants.NETWORK_TERM + "/", authToken,
+						headers);
 				return;
 
 			} else if (network.delete) {
@@ -568,7 +605,9 @@ public class Main {
 					doRequest("delete", url + "/" + OrderConstants.NETWORK_TERM, authToken);
 					return;
 				}
-				doRequest("delete", url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId, authToken);
+				doRequest("delete",
+						url + "/" + OrderConstants.NETWORK_TERM + "/" + network.networkId,
+						authToken);
 			} else {
 				jc.usage();
 				return;
@@ -614,12 +653,13 @@ public class Main {
 		}
 		return fileContent.trim();
 	}
-	
-	protected static Class<?> getClassOfTokenType(String tokenType)
-	{
-		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE), new SubTypesScanner());
 
-		Set<Class<? extends IdentityPlugin>> allClasses = reflections.getSubTypesOf(IdentityPlugin.class);
+	protected static Class<?> getClassOfTokenType(String tokenType) {
+		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE),
+				new SubTypesScanner());
+
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] packageName = eachClass.getName().split("\\.");
 			String type = packageName[packageName.length - 2];
@@ -629,12 +669,13 @@ public class Main {
 		}
 		return null;
 	}
-	
-	protected static List<String> getNamePossiblePluginTypes()
-	{
-		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE), new SubTypesScanner());
 
-		Set<Class<? extends IdentityPlugin>> allClasses = reflections.getSubTypesOf(IdentityPlugin.class);
+	protected static List<String> getNamePossiblePluginTypes() {
+		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE),
+				new SubTypesScanner());
+
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
 		List<String> possibleTypes = new LinkedList<String>();
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] packageName = eachClass.getName().split("\\.");
@@ -694,13 +735,14 @@ public class Main {
 			}
 
 		} catch (Exception e) {
-			return "Token type [" + token.type + "] is not valid. " + "Possible types: " + getNamePossiblePluginTypes() + ".";
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ getNamePossiblePluginTypes() + ".";
 		}
 		return "No Result.";
 	}
 
 	protected static String checkToken(TokenCommand token) {
-		
+
 		Class<?> pluginClass = getClassOfTokenType(token.type);
 
 		try {
@@ -713,7 +755,8 @@ public class Main {
 				identityPlugin = (IdentityPlugin) createInstance(pluginClass, properties);
 			}
 		} catch (Exception e) {
-			return "Token type [" + token.type + "] is not valid. " + "Possible types: " + getNamePossiblePluginTypes() + ".";
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ getNamePossiblePluginTypes() + ".";
 		}
 
 		try {
@@ -729,14 +772,17 @@ public class Main {
 	}
 
 	protected static String createToken(TokenCommand token) {
-		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE), new SubTypesScanner());
+		Reflections reflections = new Reflections(ClasspathHelper.forPackage(PLUGIN_PACKAGE),
+				new SubTypesScanner());
 
-		Set<Class<? extends IdentityPlugin>> allClasses = reflections.getSubTypesOf(IdentityPlugin.class);
-		
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections
+				.getSubTypesOf(IdentityPlugin.class);
+
 		Class<?> pluginClass = getClassOfTokenType(token.type);
 
 		if (pluginClass == null) {
-			return "Token type [" + token.type + "] is not valid. " + "Possible types: " + getNamePossiblePluginTypes() + ".";
+			return "Token type [" + token.type + "] is not valid. " + "Possible types: "
+					+ getNamePossiblePluginTypes() + ".";
 		}
 
 		try {
@@ -754,10 +800,11 @@ public class Main {
 		}
 	}
 
-	protected static String getPluginCredentialsInformation(Set<Class<? extends IdentityPlugin>> allClasses) {
+	protected static String getPluginCredentialsInformation(
+			Set<Class<? extends IdentityPlugin>> allClasses) {
 		StringBuilder response = new StringBuilder();
 		response.append("Credentials :\n");
-		
+
 		for (Class<? extends IdentityPlugin> eachClass : allClasses) {
 			String[] identityPluginFullName = eachClass.getName().split("\\.");
 			System.out.println(eachClass.getName());
@@ -771,9 +818,10 @@ public class Main {
 			if (identityPlugin.getCredentials() == null) {
 				continue;
 			}
-			
-			response.append("* " + identityPluginFullName[identityPluginFullName.length - 1] + "\n");
-			
+
+			response.append(
+					"* " + identityPluginFullName[identityPluginFullName.length - 1] + "\n");
+
 			for (Credential credential : identityPlugin.getCredentials()) {
 				String valueDefault = "";
 				if (credential.getValueDefault() != null) {
@@ -783,27 +831,29 @@ public class Main {
 				if (credential.isRequired()) {
 					feature = "Required";
 				}
-				response.append("   -D" + credential.getName() + " (" + feature + ")" + valueDefault + "\n");
+				response.append("   -D" + credential.getName() + " (" + feature + ")" + valueDefault
+						+ "\n");
 			}
-			
+
 		}
 		return response.toString().trim();
 	}
-	
+
 	protected static Credential[] getPluginCredentialsByTokenType(TokenCommand token) {
 
 		Class<?> pluginClass = getClassOfTokenType(token.type);
-		
+
 		if (pluginClass == null) {
 			return null;
 		}
 
 		try {
-			return ((IdentityPlugin) createInstance(pluginClass, new Properties())).getCredentials();
+			return ((IdentityPlugin) createInstance(pluginClass, new Properties()))
+					.getCredentials();
 		} catch (Exception e) {
 			return null;
 		}
-		
+
 	}
 
 	private static String generateResponse(Token token) {
@@ -813,7 +863,8 @@ public class Main {
 		return token.getAccessId();
 	}
 
-	protected static Object createInstance(Class<?> pluginClass, Properties properties) throws Exception {
+	protected static Object createInstance(Class<?> pluginClass, Properties properties)
+			throws Exception {
 		return pluginClass.getConstructor(Properties.class).newInstance(properties);
 	}
 
@@ -846,8 +897,8 @@ public class Main {
 		doRequest(method, endpoint, authToken, new LinkedList<Header>());
 	}
 
-	private static void doRequest(String method, String endpoint, String authToken, List<Header> additionalHeaders)
-			throws URISyntaxException, HttpException, IOException {
+	private static void doRequest(String method, String endpoint, String authToken,
+			List<Header> additionalHeaders) throws URISyntaxException, HttpException, IOException {
 		HttpUriRequest request = null;
 		if (method.equals("get")) {
 			request = new HttpGet(endpoint);
@@ -868,8 +919,8 @@ public class Main {
 			client = new DefaultHttpClient();
 			HttpParams params = new BasicHttpParams();
 			params.setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
-			client = new DefaultHttpClient(
-					new ThreadSafeClientConnManager(params, client.getConnectionManager().getSchemeRegistry()), params);
+			client = new DefaultHttpClient(new ThreadSafeClientConnManager(params,
+					client.getConnectionManager().getSchemeRegistry()), params);
 		}
 
 		HttpResponse response = client.execute(request);
@@ -916,7 +967,8 @@ public class Main {
 
 	private static class Command {
 		@Parameter(names = "--url", description = "fogbow manager url")
-		String url = System.getenv("FOGBOW_URL") == null ? Main.DEFAULT_URL : System.getenv("FOGBOW_URL");
+		String url = System.getenv("FOGBOW_URL") == null ? Main.DEFAULT_URL
+				: System.getenv("FOGBOW_URL");
 	}
 
 	private static class AuthedCommand extends Command {
@@ -1135,15 +1187,15 @@ public class Main {
 
 		@Parameter(names = "--attributes", description = "Attributes information")
 		boolean attributes = false;
-		
+
 		protected boolean hasPassword() {
 			return credentials.containsKey("password");
 		}
-		
+
 		protected void putPasswordAtCredentials(String password) {
 			credentials.put("password", password);
 		}
-		
+
 		protected void addPossibleMissingCredentials() {
 			if (this.credentialsNeeds("password") == true) {
 				if (this.hasPassword() == false) {
@@ -1155,9 +1207,9 @@ public class Main {
 				}
 			}
 		}
-		
+
 		protected boolean credentialsNeeds(String nameCredential) {
-			Credential [] credential = getPluginCredentialsByTokenType(this);
+			Credential[] credential = getPluginCredentialsByTokenType(this);
 			if (credential != null) {
 				for (Credential cred : credential) {
 					if (cred.getName() != null) {
@@ -1189,7 +1241,8 @@ public class Main {
 
 		public static OCCIElement createOCCIEl(String occiElStr) {
 			int hashIndex = occiElStr.indexOf('#');
-			return new OCCIElement(occiElStr.substring(0, hashIndex + 1), occiElStr.substring(hashIndex + 1));
+			return new OCCIElement(occiElStr.substring(0, hashIndex + 1),
+					occiElStr.substring(hashIndex + 1));
 		}
 
 		public String getScheme() {

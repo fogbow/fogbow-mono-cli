@@ -69,24 +69,24 @@ public class TestCli {
 		Mockito.when(client.execute(Mockito.any(HttpUriRequest.class))).thenReturn(response);
 		cli.setClient(client);
 
-	}	
+	}
 
 	@SuppressWarnings({ "static-access", "unchecked" })
 	@Test
 	public void commandGetToken() throws Exception {
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		String accessId = "AccessId";
-		Token token = new Token(accessId , new Token.User("user", "user"), null, null);
+		Token token = new Token(accessId, new Token.User("user", "user"), null, null);
 		Mockito.when(identityPlugin.createToken(Mockito.anyMap())).thenReturn(token);
-		
+
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
-		tokenCommand.credentials = new HashMap<String, String>();	
-	
+		tokenCommand.credentials = new HashMap<String, String>();
+
 		cli.setIdentityPlugin(identityPlugin);
 		Assert.assertEquals(accessId, cli.createToken(tokenCommand));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandWithoutUrl() throws Exception {
@@ -95,10 +95,9 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "instance --get --auth-token "
-				+ ACCESS_TOKEN_ID;
+		String command = "instance --get --auth-token " + ACCESS_TOKEN_ID;
 		cli.main(createArgs(command));
-			
+
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
 
@@ -112,49 +111,50 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
 		request.addHeader("Category", image
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --requirements " + requirements + " --flavor " + flavor + " --resource-kind " 
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ "--image " + image + " --auth-token " + ACCESS_TOKEN_ID + " --requirements "
+				+ requirements + " --flavor " + flavor + " --resource-kind "
 				+ OrderConstants.COMPUTE_TERM;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithoutResourceKind() throws Exception {
 		final String intanceCount = "2";
 		final String requirements = "X>=1&&Y=2";
 
-		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);			
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + "image" + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --requirements " + requirements + " --flavor " + "flavor";
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ "--image " + "image" + " --auth-token " + ACCESS_TOKEN_ID + " --requirements "
+				+ requirements + " --flavor " + "flavor";
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client, Mockito.times(0)).execute(Mockito.argThat(expectedRequest));
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithResourceKindStorage() throws Exception {
@@ -164,29 +164,28 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("X-OCCI-Attribute", OrderAttribute.STORAGE_SIZE.getValue() + "=" + size);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.STORAGE_SIZE.getValue() + "=" + size);				
-		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.STORAGE_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.STORAGE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
-				+  " --resource-kind " + OrderConstants.STORAGE_TERM + " --size " + size;
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements
+				+ " --resource-kind " + OrderConstants.STORAGE_TERM + " --size " + size;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithResourceKindNetwork() throws Exception {
@@ -198,31 +197,32 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + cird);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
-				+  " --resource-kind " + OrderConstants.NETWORK_TERM + " --cidr " + cird
-				+ " --gateway " + gateway + " --allocation " + OCCIConstants.NetworkAllocation.DYNAMIC.getValue();
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements
+				+ " --resource-kind " + OrderConstants.NETWORK_TERM + " --cidr " + cird
+				+ " --gateway " + gateway + " --allocation "
+				+ OCCIConstants.NetworkAllocation.DYNAMIC.getValue();
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithResourceKindNetworkWithoutAttributes() throws Exception {
@@ -231,27 +231,27 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME +"\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
-				+  " --resource-kind " + OrderConstants.NETWORK_TERM;
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements
+				+ " --resource-kind " + OrderConstants.NETWORK_TERM;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithResourceKindNetworkWithWrongAllocation() throws Exception {
@@ -263,49 +263,48 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME +"\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_GATEWAY + "=" + gateway);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ALLOCATION + "=" + allocation);
 		request.addHeader("X-OCCI-Attribute", OCCIConstants.NETWORK_ADDRESS + "=" + cird);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.NETWORK_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
-				+  " --resource-kind " + OrderConstants.NETWORK_TERM + " --allocation " + "wrong";
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements
+				+ " --resource-kind " + OrderConstants.NETWORK_TERM + " --allocation " + "wrong";
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client, Mockito.times(0)).execute(Mockito.any(HttpUriRequest.class));
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithResourceKindStorageWithoutSizeAttribute() throws Exception {
 		final String intanceCount = "2";
 		final String requirements = "X>=1&&Y=2";
 
-		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);				
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements 
-				+  " --resource-kind " + OrderConstants.STORAGE_TERM;
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ " --auth-token " + ACCESS_TOKEN_ID + " --requirements " + requirements
+				+ " --resource-kind " + OrderConstants.STORAGE_TERM;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client, Mockito.times(0)).execute(Mockito.argThat(expectedRequest));
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithDataUser() throws Exception {
@@ -321,15 +320,17 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.EXTRA_USER_DATA_ATT.getValue() + "="
 				+ new String(Base64.encodeBase64(userDataContent.getBytes())));
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);		
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.EXTRA_USER_DATA_CONTENT_TYPE_ATT.getValue() + "=" + type);
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
 		request.addHeader("Category", image
@@ -339,16 +340,16 @@ public class TestCli {
 				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --requirements " + requirements + " --flavor " + flavor + " --user-data-file " + userDataPath
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ "--image " + image + " --auth-token " + ACCESS_TOKEN_ID + " --requirements "
+				+ requirements + " --flavor " + flavor + " --user-data-file " + userDataPath
 				+ " --user-data-file-content-type " + type + " --resource-kind compute";
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderWithoutRequirements() throws Exception {
@@ -358,10 +359,10 @@ public class TestCli {
 
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM
-				+ "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ intanceCount);
+		request.addHeader("Category",
+				OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME + "\"; class=\"kind\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + intanceCount);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
 		request.addHeader("Category", flavor
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/resource#\"; class=\"mixin\"");
@@ -369,40 +370,41 @@ public class TestCli {
 				+ "; scheme=\"http://schemas.fogbowcloud.org/template/os#\"; class=\"mixin\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);				
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL
-				+ " " + "--image " + image + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --flavor " + flavor + " --resource-kind compute";
+		String command = "order --create --n " + intanceCount + " --url " + Main.DEFAULT_URL + " "
+				+ "--image " + image + " --auth-token " + ACCESS_TOKEN_ID + " --flavor " + flavor
+				+ " --resource-kind compute";
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostOrderDefaultValues() throws Exception {
 		String requirements = "X1==&&Y==2";
-		
+
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.TERM);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader("Category", OrderConstants.TERM + "; scheme=\""
-				+ OrderConstants.SCHEME + "\"; class=\"" + OrderConstants.KIND_CLASS + "\"");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.INSTANCE_COUNT.getValue() + "="
-				+ Main.DEFAULT_INTANCE_COUNT);
+		request.addHeader("Category", OrderConstants.TERM + "; scheme=\"" + OrderConstants.SCHEME
+				+ "\"; class=\"" + OrderConstants.KIND_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.INSTANCE_COUNT.getValue() + "=" + Main.DEFAULT_INTANCE_COUNT);
 		request.addHeader("X-OCCI-Attribute", OrderAttribute.TYPE.getValue() + "=one-time");
-		request.addHeader("X-OCCI-Attribute", OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
-		request.addHeader("Category", Main.DEFAULT_IMAGE + "; scheme=\""
-				+ OrderConstants.TEMPLATE_OS_SCHEME + "\"; class=\""
-				+ OrderConstants.MIXIN_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute",
+				OrderAttribute.REQUIREMENTS.getValue() + "=" + requirements);
+		request.addHeader("Category",
+				Main.DEFAULT_IMAGE + "; scheme=\"" + OrderConstants.TEMPLATE_OS_SCHEME
+						+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\"");
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		request.addHeader("X-OCCI-Attribute",
-				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);		
+				OrderAttribute.RESOURCE_KIND.getValue() + "=" + OrderConstants.COMPUTE_TERM);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
 		String command = "order --create --url " + Main.DEFAULT_URL + " --auth-token "
-				+ ACCESS_TOKEN_ID + " --requirements " + requirements  + " --resource-kind compute";
+				+ ACCESS_TOKEN_ID + " --requirements " + requirements + " --resource-kind compute";
 
 		cli.main(createArgs(command));
 
@@ -412,8 +414,8 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetSpecificOrder() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.TERM + "/"
-				+ ORDER_ID);
+		HttpUriRequest request = new HttpGet(
+				Main.DEFAULT_URL + "/" + OrderConstants.TERM + "/" + ORDER_ID);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
@@ -445,8 +447,8 @@ public class TestCli {
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandDeleteOrder() throws Exception {
-		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.TERM
-				+ "/" + ORDER_ID);
+		HttpUriRequest request = new HttpDelete(
+				Main.DEFAULT_URL + "/" + OrderConstants.TERM + "/" + ORDER_ID);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
@@ -485,7 +487,7 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetMemberQuota() throws Exception {
@@ -495,11 +497,11 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "member --quota --id " + id  + " --auth-token " + ACCESS_TOKEN_ID;
+		String command = "member --quota --id " + id + " --auth-token " + ACCESS_TOKEN_ID;
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
+	}
 
 	@SuppressWarnings("static-access")
 	@Test
@@ -507,29 +509,30 @@ public class TestCli {
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/compute/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader("Category", OrderConstants.COMPUTE_TERM + "; scheme=\""
-				+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
-				+ OrderConstants.KIND_CLASS + "\"");
+		request.addHeader("Category",
+				OrderConstants.COMPUTE_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+						+ OrderConstants.KIND_CLASS + "\"");
 		request.addHeader("Category",
 				"large; scheme=\"http://schemas.openstack.org/template/resource#\"; class=\""
 						+ OrderConstants.MIXIN_CLASS + "\"");
 		request.addHeader("Category",
 				"imageName; scheme=\"http://schemas.openstack.org/template/os#\"; class=\""
 						+ OrderConstants.MIXIN_CLASS + "\"");
-		
+
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String flavorId = "http://schemas.openstack.org/template/resource#large";		
+		String flavorId = "http://schemas.openstack.org/template/resource#large";
 		String imageId = "http://schemas.openstack.org/template/os#imageName";
-		
+
 		String command = "instance --create --url " + Main.DEFAULT_URL + " " + " --auth-token "
-				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " +  flavorId;
-		
+				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " + flavorId;
+
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandCreateInstanceWithUserData() throws Exception {
@@ -537,37 +540,40 @@ public class TestCli {
 		String userDataContent = "";
 		File file = new File(userDataPath);
 		userDataContent = IOUtils.toString(new FileInputStream(file));
-		
+
 		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/compute/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
-		request.addHeader("Category", OrderConstants.COMPUTE_TERM + "; scheme=\""
-				+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
-				+ OrderConstants.KIND_CLASS + "\"");
+		request.addHeader("Category",
+				OrderConstants.COMPUTE_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+						+ OrderConstants.KIND_CLASS + "\"");
 		request.addHeader("Category",
 				"large; scheme=\"http://schemas.openstack.org/template/resource#\"; class=\""
 						+ OrderConstants.MIXIN_CLASS + "\"");
 		request.addHeader("Category",
 				"imageName; scheme=\"http://schemas.openstack.org/template/os#\"; class=\""
 						+ OrderConstants.MIXIN_CLASS + "\"");
-		request.addHeader("Category", "user_data" + "; scheme=\""
-				+ "http://schemas.openstack.org/compute/instance#" + "\"; class=\""
-				+ OrderConstants.MIXIN_CLASS + "\"");
-		request.addHeader("X-OCCI-Attribute", "org.openstack.compute.user_data=" + new String(Base64.encodeBase64(userDataContent.getBytes())));
-				
+		request.addHeader("Category",
+				"user_data" + "; scheme=\"" + "http://schemas.openstack.org/compute/instance#"
+						+ "\"; class=\"" + OrderConstants.MIXIN_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute", "org.openstack.compute.user_data="
+				+ new String(Base64.encodeBase64(userDataContent.getBytes())));
+
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String flavorId = "http://schemas.openstack.org/template/resource#large";		
+		String flavorId = "http://schemas.openstack.org/template/resource#large";
 		String imageId = "http://schemas.openstack.org/template/os#imageName";
-		
+
 		String command = "instance --create --url " + Main.DEFAULT_URL + " " + " --auth-token "
-				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " +  flavorId + " --user-data-file " + userDataPath;
-		
+				+ ACCESS_TOKEN_ID + " --image " + imageId + " --flavor " + flavorId
+				+ " --user-data-file " + userDataPath;
+
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetInstance() throws Exception {
@@ -606,14 +612,14 @@ public class TestCli {
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
 
-		String command = "instance --delete --url " + Main.DEFAULT_URL + " " + "--id "
-				+ INSTANCE_ID + " --auth-token " + ACCESS_TOKEN_ID;
+		String command = "instance --delete --url " + Main.DEFAULT_URL + " " + "--id " + INSTANCE_ID
+				+ " --auth-token " + ACCESS_TOKEN_ID;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetCredentialsInformation() {
@@ -662,31 +668,31 @@ public class TestCli {
 		headers[1] = new BasicHeader("Test1", "");
 		Header locationHeader = Main.getLocationHeader(headers);
 		String response = Main.generateLocationHeaderResponse(locationHeader);
-		String correctResponse = HeaderUtils.X_OCCI_LOCATION_PREFIX + value1 +
-				"\n" + HeaderUtils.X_OCCI_LOCATION_PREFIX + value2;
+		String correctResponse = HeaderUtils.X_OCCI_LOCATION_PREFIX + value1 + "\n"
+				+ HeaderUtils.X_OCCI_LOCATION_PREFIX + value2;
 		Assert.assertEquals(correctResponse, response);
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void TestNormalizeToken() throws FileNotFoundException, IOException {
 		String token = "Test\nSpace";
 		String tokenNormalized = cli.normalizeToken(token);
 		Assert.assertEquals(token.replace("\n", ""), tokenNormalized);
-				
+
 		File file = new File("src/test/resource/get_content");
 		token = IOUtils.toString(new FileInputStream(file));
 		Assert.assertTrue(token.length() > 0);
-		
+
 		file = new File("src/test/resource/wrong");
 		try {
-			token = IOUtils.toString(new FileInputStream(file));		
+			token = IOUtils.toString(new FileInputStream(file));
 		} catch (Exception e) {
 			token = null;
 		}
 		Assert.assertNull(token);
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandPostAttachment() throws Exception {
@@ -694,138 +700,138 @@ public class TestCli {
 		final String target = "target";
 		final String deviceId = "deviceId";
 
-		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
-				+ OrderConstants.STORAGE_LINK_TERM + "/");
+		HttpUriRequest request = new HttpPost(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM
+				+ "/" + OrderConstants.STORAGE_LINK_TERM + "/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
-		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);		
-		request.addHeader("Category", OrderConstants.STORAGELINK_TERM
-				+ "; scheme=\"" + OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\"" 
-				+ OrderConstants.KIND_CLASS +"\"");
-		request.addHeader("X-OCCI-Attribute", StorageAttribute.SOURCE.getValue() + "="
-				+ source);
-		request.addHeader("X-OCCI-Attribute", StorageAttribute.DEVICE_ID.getValue() + "="
-				+ deviceId);
-		request.addHeader("X-OCCI-Attribute", StorageAttribute.TARGET.getValue() + "="
-				+ target);
+		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
+		request.addHeader("Category",
+				OrderConstants.STORAGELINK_TERM + "; scheme=\""
+						+ OrderConstants.INFRASTRUCTURE_OCCI_SCHEME + "\"; class=\""
+						+ OrderConstants.KIND_CLASS + "\"");
+		request.addHeader("X-OCCI-Attribute", StorageAttribute.SOURCE.getValue() + "=" + source);
+		request.addHeader("X-OCCI-Attribute",
+				StorageAttribute.DEVICE_ID.getValue() + "=" + deviceId);
+		request.addHeader("X-OCCI-Attribute", StorageAttribute.TARGET.getValue() + "=" + target);
 		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "attachment --create --url " + Main.DEFAULT_URL
-				+ " " + "--computeId " + source + " --auth-token " + ACCESS_TOKEN_ID
-				+ " --storageId " + target + " --mountPoint " + deviceId;
+
+		String command = "attachment --create --url " + Main.DEFAULT_URL + " " + "--computeId "
+				+ source + " --auth-token " + ACCESS_TOKEN_ID + " --storageId " + target
+				+ " --mountPoint " + deviceId;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetAttachment() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
-				+ OrderConstants.STORAGE_LINK_TERM + "/");
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM
+				+ "/" + OrderConstants.STORAGE_LINK_TERM + "/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "attachment --get --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID;
+
+		String command = "attachment --get --url " + Main.DEFAULT_URL + " " + " --auth-token "
+				+ ACCESS_TOKEN_ID;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetSpecificAttachment() throws Exception {
 		String storageLinkId = "storageLinkId";
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
-				+ OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
+		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM
+				+ "/" + OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "attachment --get --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --id " + storageLinkId;
+
+		String command = "attachment --get --url " + Main.DEFAULT_URL + " " + " --auth-token "
+				+ ACCESS_TOKEN_ID + " --id " + storageLinkId;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandDeleteSpecificAttachment() throws Exception {
 		String storageLinkId = "storageLinkId";
-		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM + "/" 
-				+ OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
+		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.STORAGE_TERM
+				+ "/" + OrderConstants.STORAGE_LINK_TERM + "/" + storageLinkId);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
-		
-		String command = "attachment --delete --url " + Main.DEFAULT_URL
-				+ " " + " --auth-token " + ACCESS_TOKEN_ID + " --id " + storageLinkId;
+
+		String command = "attachment --delete --url " + Main.DEFAULT_URL + " " + " --auth-token "
+				+ ACCESS_TOKEN_ID + " --id " + storageLinkId;
 
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithoutAttributesOnCommand() {
 		TokenCommand tokenCommand = new TokenCommand();
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		Token token = new Token("accessId", new Token.User("user", "user"), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(token.toString(), responseStr);
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithAttributeUserName() {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
 		tokenCommand.userName = true;
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		String user = "user";
 		Token token = new Token("accessId", new Token.User("userId", user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(user, responseStr);
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithAttributeUserId() {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
 		tokenCommand.userId = true;
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		String username = "user";
 		String userId = "userId";
-		Token token = new Token("accessId", new Token.User(userId, username), new Date(), attributes);
+		Token token = new Token("accessId", new Token.User(userId, username), new Date(),
+				attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(userId, responseStr);
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithAttributeFullUser() {
@@ -833,29 +839,30 @@ public class TestCli {
 		tokenCommand.type = "openstack";
 		tokenCommand.userId = true;
 		tokenCommand.userName = true;
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		String username = "user";
 		String userId = "userId";
-		Token token = new Token("accessId", new Token.User(userId, username), new Date(), attributes);
+		Token token = new Token("accessId", new Token.User(userId, username), new Date(),
+				attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(username + "," + userId, responseStr);
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithAttributeAccessId() {
 		TokenCommand tokenCommand = new TokenCommand();
 		tokenCommand.type = "openstack";
 		tokenCommand.accessId = true;
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		attributes.put("x", "y");
 		String user = "user";
@@ -863,11 +870,11 @@ public class TestCli {
 		Token token = new Token(accessId, new Token.User(user, user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(accessId, responseStr);
-	}		
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void testGetTokenInfoOnlyResponseWithAttributeAccessIdAndUser() {
@@ -875,9 +882,9 @@ public class TestCli {
 		tokenCommand.type = "openstack";
 		tokenCommand.accessId = true;
 		tokenCommand.userName = true;
-		
+
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
-		
+
 		HashMap<String, String> attributes = new HashMap<String, String>();
 		attributes.put("x", "y");
 		String user = "user";
@@ -885,15 +892,16 @@ public class TestCli {
 		Token token = new Token(accessId, new Token.User(user, user), new Date(), attributes);
 		Mockito.when(identityPlugin.getToken(Mockito.anyString())).thenReturn(token);
 		cli.setIdentityPlugin(identityPlugin);
-		
+
 		String responseStr = cli.getTokenInfo(tokenCommand);
 		Assert.assertEquals(accessId + "," + user, responseStr);
-	}	
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetNetworks() throws Exception {
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/");
+		HttpUriRequest request = new HttpGet(
+				Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/");
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
@@ -903,12 +911,13 @@ public class TestCli {
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
 	}
-	
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandGetSpecificNetwork() throws Exception {
 		String networkId = "networkId00";
-		HttpUriRequest request = new HttpGet(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
+		HttpUriRequest request = new HttpGet(
+				Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
@@ -917,13 +926,14 @@ public class TestCli {
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}			
-	
+	}
+
 	@SuppressWarnings("static-access")
 	@Test
 	public void commandDeleteSpecificNetwork() throws Exception {
 		String networkId = "networkId00";
-		HttpUriRequest request = new HttpDelete(Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
+		HttpUriRequest request = new HttpDelete(
+				Main.DEFAULT_URL + "/" + OrderConstants.NETWORK_TERM + "/" + networkId);
 		request.addHeader(OCCIHeaders.CONTENT_TYPE, OCCIHeaders.OCCI_CONTENT_TYPE);
 		request.addHeader(OCCIHeaders.X_AUTH_TOKEN, ACCESS_TOKEN_ID);
 		expectedRequest = new HttpUriRequestMatcher(request);
@@ -932,8 +942,8 @@ public class TestCli {
 		cli.main(createArgs(command));
 
 		Mockito.verify(client).execute(Mockito.argThat(expectedRequest));
-	}		
-	
+	}
+
 	@Test
 	public void testTokenCommandCredentialNeeds() throws Exception {
 
@@ -966,11 +976,11 @@ public class TestCli {
 
 		Assert.assertEquals(true, token.hasPassword());
 	}
-	
+
 	private String[] createArgs(String command) throws Exception {
 		return command.trim().split(" ");
 	}
-	
+
 	private class HttpUriRequestMatcher extends ArgumentMatcher<HttpUriRequest> {
 
 		private HttpUriRequest request;
@@ -1003,8 +1013,7 @@ public class TestCli {
 							headerEquals = true;
 							break;
 						}
-					} else 
-					if (header.getName().equals(comparedHeader.getName())
+					} else if (header.getName().equals(comparedHeader.getName())
 							&& header.getValue().equals(comparedHeader.getValue())) {
 						headerEquals = true;
 						continue;
