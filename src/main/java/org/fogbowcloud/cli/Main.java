@@ -36,9 +36,9 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.fogbowcloud.manager.core.UserdataUtils;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
+import org.fogbowcloud.manager.core.util.UserdataUtils;
 import org.fogbowcloud.manager.occi.OCCIConstants;
 import org.fogbowcloud.manager.occi.OCCIConstants.NetworkAllocation;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
@@ -1112,6 +1112,9 @@ public class Main {
 
 		@Parameter(names = "--type", description = "Token type")
 		String type = null;
+		
+		@Parameter(names = "--password", description = "Password", password=true)
+		private String password;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		Map<String, String> credentials = new HashMap<String, String>();
