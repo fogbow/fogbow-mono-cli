@@ -39,7 +39,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
-import org.fogbowcloud.manager.core.UserdataUtils;
+import org.fogbowcloud.manager.core.util.UserdataUtils;
 import org.fogbowcloud.manager.occi.OCCIConstants;
 import org.fogbowcloud.manager.occi.OCCIConstants.NetworkAllocation;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
