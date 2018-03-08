@@ -1116,9 +1116,6 @@ public class Main {
 
 		@Parameter(names = "--type", description = "Token type")
 		String type = null;
-		
-		@Parameter(names = "--password", description = "Password", password=true)
-		private String password;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		Map<String, String> credentials = new HashMap<String, String>();
