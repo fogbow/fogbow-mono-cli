@@ -753,6 +753,9 @@ public class Main {
 			Token createToken = identityPlugin.createToken(token.credentials);
 			return generateResponse(createToken);
 		} catch (OCCIException e) {
+			if (e.getStatus() == null) {
+				return "OCCI error: while trying to sign the token";
+			}
 			return e.getStatus().getDescription() + "\n" + getPluginCredentialsInformation(allClasses);
 		} catch (Exception e) {
 			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);

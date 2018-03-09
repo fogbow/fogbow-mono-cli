@@ -88,7 +88,7 @@ public class TestCli {
 	
 	@SuppressWarnings({ "static-access", "unchecked" })
 	@Test
-	public void commandWithoutDprivateKeyOnCommandGetToken() {
+	public void OCCIExceptionOnCommandGetToken() {
 
 		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
 		cli.setIdentityPlugin(identityPlugin);
