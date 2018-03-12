@@ -43,6 +43,7 @@ import org.fogbowcloud.manager.core.util.UserdataUtils;
 import org.fogbowcloud.manager.occi.OCCIConstants;
 import org.fogbowcloud.manager.occi.OCCIConstants.NetworkAllocation;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
+import org.fogbowcloud.manager.occi.model.OCCIException;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.order.OrderAttribute;
@@ -749,10 +750,16 @@ public class Main {
 		}
 
 		try {
-			return generateResponse(identityPlugin.createToken(token.credentials));
+			Token createToken = identityPlugin.createToken(token.credentials);
+			return generateResponse(createToken);
+		} catch (OCCIException e) {
+			if (e.getStatus() == null) {
+				return "OCCI error: while trying to sign the token";
+			}
+			return e.getStatus().getDescription() + "\n" + getPluginCredentialsInformation(allClasses);
 		} catch (Exception e) {
 			return e.getMessage() + "\n" + getPluginCredentialsInformation(allClasses);
-		}
+		} 
 	}
 
 	protected static String getPluginCredentialsInformation(Set<Class<? extends IdentityPlugin>> allClasses) {
@@ -1112,9 +1119,6 @@ public class Main {
 
 		@Parameter(names = "--type", description = "Token type")
 		String type = null;
-		
-		@Parameter(names = "--password", description = "Password", password=true)
-		private String password;
 
 		@DynamicParameter(names = "-D", description = "Dynamic parameters")
 		Map<String, String> credentials = new HashMap<String, String>();

@@ -30,7 +30,9 @@ import org.fogbowcloud.cli.Main.TokenCommand;
 import org.fogbowcloud.manager.core.plugins.IdentityPlugin;
 import org.fogbowcloud.manager.core.plugins.util.Credential;
 import org.fogbowcloud.manager.occi.OCCIConstants;
+import org.fogbowcloud.manager.occi.model.ErrorType;
 import org.fogbowcloud.manager.occi.model.HeaderUtils;
+import org.fogbowcloud.manager.occi.model.OCCIException;
 import org.fogbowcloud.manager.occi.model.OCCIHeaders;
 import org.fogbowcloud.manager.occi.model.Token;
 import org.fogbowcloud.manager.occi.order.OrderAttribute;
@@ -82,6 +84,34 @@ public class TestCli {
 
 		cli.setIdentityPlugin(identityPlugin);
 		Assert.assertEquals(accessId, cli.createToken(tokenCommand));
+	}
+	
+	@SuppressWarnings({ "static-access", "unchecked" })
+	@Test
+	public void OCCIExceptionOnCommandGetToken() {
+
+		IdentityPlugin identityPlugin = Mockito.mock(IdentityPlugin.class);
+		cli.setIdentityPlugin(identityPlugin);
+
+		Reflections reflections = new Reflections(ClasspathHelper.forPackage(Main.PLUGIN_PACKAGE),
+				new SubTypesScanner());
+
+		Set<Class<? extends IdentityPlugin>> allClasses = reflections.getSubTypesOf(IdentityPlugin.class);
+
+		String pluginCredentialsInformation = cli.getPluginCredentialsInformation(allClasses);
+
+		String msgException = "Erro while trying to sign the token";
+
+		String response = msgException + System.lineSeparator() + pluginCredentialsInformation;
+
+		Mockito.when(identityPlugin.createToken(Mockito.anyMap()))
+				.thenThrow(new OCCIException(ErrorType.INTERNAL_SERVER_ERROR, msgException));
+
+		TokenCommand tokenCommand = new TokenCommand();
+		tokenCommand.type = "openstack";
+		tokenCommand.credentials = new HashMap<String, String>();
+
+		Assert.assertEquals(response, cli.createToken(tokenCommand));
 	}
 
 	@SuppressWarnings("static-access")
